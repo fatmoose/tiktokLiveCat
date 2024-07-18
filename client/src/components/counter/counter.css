@@ -1,0 +1,96 @@
+body {
+    font: 13px/20px "Lucida Grande", Tahoma, Verdana, sans-serif;
+    color: #404040;
+    background: #2a2a2a;
+  }
+  
+  .container {
+    margin-top: 20px;
+    margin-bottom: 70px;
+    width: 400px;
+    text-align: center;
+  }
+  
+  .container .progress {
+    width: 90%;
+    margin-right: 10px;
+    transform: skew(30deg);
+    height: 30px;
+  }
+  
+  .progress {
+    padding: 4px;
+    background: rgb(10, 3, 49);
+    border-radius: 6px;
+  }
+  
+  .progress-bar {
+    position: absolute;
+    height: 30px;
+    border-radius: 4px;
+    background-image: linear-gradient(to right, #7c0000, #f99601, #f99601);
+    -webkit-transition: 0.4s linear;
+    -moz-transition: 0.4s linear;
+    -o-transition: 0.4s linear;
+    transition: 0.4s linear;
+    -webkit-transition-property: width, background-color;
+    -moz-transition-property: width, background-color;
+    -o-transition-property: width, background-color;
+    transition-property: width, background-color;
+    -webkit-box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .progress {
+    padding: 4px;
+    background: rgb(10, 3, 49);
+    border-radius: 6px; /* Add this line to hide overflowing content for top and bottom */
+    overflow-y: hidden;
+  }
+
+  
+  .radio {
+    display: none;
+  }
+  
+  .label {
+    display: inline-block;
+    margin: 0 5px 20px;
+    padding: 3px 8px;
+    color: #aaa;
+    text-shadow: 0 1px black;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  
+  .radio:checked + .label {
+    color: white;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+
+  .progress-text {
+
+    color: #ffffff;
+    text-shadow:
+    0 0 5px #fff,
+    0 0 10px #fff,
+    0 0 20px #fff,
+    0 0 40px #0ff,
+    0 0 80px #0ff,
+    0 0 90px #0ff,
+    0 0 100px #0ff,
+    0 0 150px #0ff;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 40px;
+  } 
+
+
+  
+  .progress-bar span {
+    float: right;
+  }
