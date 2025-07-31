@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐉 Toothless Game Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .button:hover { background: #45a049; }
+        .button.boss { background: #f44336; }
+        .button.boss:hover { background: #da190b; }
+        .status {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .instructions {
+            background: #444;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐉 Toothless Game Tester</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <p>1. Make sure your dev server is running (<code>npm run dev</code>)</p>
+        <p>2. Open <code>http://localhost:5173</code> in another tab</p>
+        <p>3. Use the buttons below to test the updated happiness bar</p>
+        <p>4. Watch the happiness bar fill with coins and boss battles trigger!</p>
+    </div>
+
+    <div class="status" id="status">Ready to test!</div>
+
+    <h3>🍎 Feeding Tests</h3>
+    <button class="button" onclick="sendGift(50, 'small_feeder')">Small Feed (50 coins)</button>
+    <button class="button" onclick="sendGift(200, 'medium_feeder')">Medium Feed (200 coins)</button>
+    <button class="button" onclick="sendGift(500, 'big_feeder')">Big Feed (500 coins)</button>
+    
+    <h3>⚔️ Boss Battle Tests</h3>
+    <button class="button boss" onclick="sendGift(1000, 'boss_summoner')">Trigger Boss Level 1 (1000 coins)</button>
+    <button class="button boss" onclick="sendGift(5000, 'boss_master')">Trigger Boss Level 2 (5000 coins)</button>
+
+    <script>
+        async function sendGift(coins, user) {
+            const status = document.getElementById('status');
+            status.innerHTML = `Sending ${coins} coins from ${user}...`;
+            
+            try {
+                const response = await fetch('http://localhost:8081/dev/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'gift', user: user, coins: coins })
+                });
+
+                if (response.ok) {
+                    status.innerHTML = `✅ Sent ${coins} coins! Check your main app for updates.`;
+                    status.style.background = '#2d5a2d';
+                } else {
+                    status.innerHTML = `❌ Failed. Make sure server is running on port 8081.`;
+                    status.style.background = '#5a2d2d';
+                }
+            } catch (error) {
+                status.innerHTML = `❌ Error: ${error.message}`;
+                status.style.background = '#5a2d2d';
+            }
+
+            setTimeout(() => { status.style.background = '#333'; }, 3000);
+        }
+    </script>
+</body>
+</html> 

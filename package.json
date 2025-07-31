@@ -1,0 +1,36 @@
+{
+  "name": "cat",
+  "version": "1.0.0",
+  "description": "A full-stack application that connects to TikTok Live streams and displays real-time visual effects based on live engagement events like likes, comments, gifts, follows, and shares.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "lsof -ti:8081 | xargs kill -9 || true && concurrently --names \"SERVER,CLIENT\" --prefix-colors \"blue,green\" \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build",
+    "start": "npm run server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fatmoose/tiktokLiveCat.git"
+  },
+  "keywords": [
+    "tiktok",
+    "live",
+    "react",
+    "nodejs",
+    "websocket",
+    "real-time"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fatmoose/tiktokLiveCat/issues"
+  },
+  "homepage": "https://github.com/fatmoose/tiktokLiveCat#readme",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

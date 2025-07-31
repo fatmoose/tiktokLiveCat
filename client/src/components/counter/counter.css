@@ -5,92 +5,231 @@ body {
   }
   
   .container {
-    margin-top: 20px;
-    margin-bottom: 70px;
-    width: 400px;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    min-width: 350px;
+    position: relative;
+    overflow: hidden;
   }
   
-  .container .progress {
-    width: 90%;
-    margin-right: 10px;
-    transform: skew(30deg);
-    height: 30px;
-  }
-  
-  .progress {
-    padding: 4px;
-    background: rgb(10, 3, 49);
-    border-radius: 6px;
-  }
-  
-  .progress-bar {
+  .container::before {
+    content: '';
     position: absolute;
-    height: 30px;
-    border-radius: 4px;
-    background-image: linear-gradient(to right, #7c0000, #f99601, #f99601);
-    -webkit-transition: 0.4s linear;
-    -moz-transition: 0.4s linear;
-    -o-transition: 0.4s linear;
-    transition: 0.4s linear;
-    -webkit-transition-property: width, background-color;
-    -moz-transition-property: width, background-color;
-    -o-transition-property: width, background-color;
-    transition-property: width, background-color;
-    -webkit-box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
-  }
-
-  .progress {
-    padding: 4px;
-    background: rgb(10, 3, 49);
-    border-radius: 6px; /* Add this line to hide overflowing content for top and bottom */
-    overflow-y: hidden;
-  }
-
-  
-  .radio {
-    display: none;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 3s infinite;
   }
   
-  .label {
-    display: inline-block;
-    margin: 0 5px 20px;
-    padding: 3px 8px;
-    color: #aaa;
-    text-shadow: 0 1px black;
-    border-radius: 3px;
-    cursor: pointer;
+  @keyframes shimmer {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
   }
   
-  .radio:checked + .label {
+  /* Stats Display */
+  .stats-display {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    width: 100%;
+    z-index: 1;
+  }
+  
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 18px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+    min-width: 110px;
+    transition: all 0.3s ease;
+  }
+  
+  .stat-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .stat-icon {
+    font-size: 32px;
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+  }
+  
+  .stat-details {
+    flex: 1;
+    text-align: left;
+  }
+  
+  .stat-value {
+    font-size: 28px;
+    font-weight: bold;
     color: white;
-    background: rgba(0, 0, 0, 0.25);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin-bottom: 3px;
   }
-
-
-  .progress-text {
-
-    color: #ffffff;
-    text-shadow:
-    0 0 5px #fff,
-    0 0 10px #fff,
-    0 0 20px #fff,
-    0 0 40px #0ff,
-    0 0 80px #0ff,
-    0 0 90px #0ff,
-    0 0 100px #0ff,
-    0 0 150px #0ff;
-    margin-top: 40px;
-    margin-bottom: 20px;
-    font-family: "Lucida Console", "Courier New", monospace;
-    font-style: italic;
-    font-weight: 900;
-    font-size: 40px;
-  } 
-
-
   
-  .progress-bar span {
-    float: right;
+  .stat-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  
+  
+  /* Recent Activity */
+  .recent-activity {
+    position: absolute;
+    top: -40px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    animation: activityAppear 2s ease-out;
+    z-index: 10;
+  }
+  
+  @keyframes activityAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(0) scale(1.2);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.8);
+    }
+  }
+  
+  .activity-burst {
+    background: linear-gradient(135deg, #ff6b6b, #ffa726);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    animation: burstPulse 0.5s ease-out;
+  }
+  
+  @keyframes burstPulse {
+    0% {
+        transform: scale(0.8);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+  }
+  
+  .activity-user {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px 10px;
+    border-radius: 10px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .container {
+        width: 100%;
+        max-width: 100%;
+        min-width: unset;
+        padding: 25px;
+        gap: 20px;
+    }
+    
+    .stats-display {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stat-item {
+        padding: 16px;
+        gap: 12px;
+        min-width: unset;
+    }
+    
+    .stat-icon {
+        font-size: 28px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+
+    
+    .recent-activity {
+        top: -35px;
+        right: 15px;
+    }
+    
+    .activity-burst {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .activity-user {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+  }
+  
+  /* Performance optimizations */
+  .container * {
+    will-change: transform;
+  }
+  
+  /* Reduced motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    .container * {
+        animation-duration: 0.1s !important;
+        animation-iteration-count: 1 !important;
+    }
   }

@@ -1,0 +1,327 @@
+.leaderboard {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    z-index: 10;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.leaderboard.hidden {
+    transform: translateX(100%);
+    opacity: 0.3;
+}
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.leaderboard-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.leaderboard-content {
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    animation: slideIn 0.5s ease-out;
+    position: relative;
+    min-height: 50px;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.leaderboard-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.leaderboard-item.rank-1 {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #333;
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.leaderboard-item.rank-1 .nickname,
+.leaderboard-item.rank-1 .score {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-item.rank-2 {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+    color: #333;
+    border: 2px solid #c0c0c0;
+}
+
+.leaderboard-item.rank-2 .nickname,
+.leaderboard-item.rank-2 .score {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-item.rank-3 {
+    background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+    color: white;
+    border: 2px solid #cd7f32;
+}
+
+.leaderboard-item.rank-3 .nickname,
+.leaderboard-item.rank-3 .score {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.rank-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    flex-shrink: 0;
+}
+
+.medal {
+    font-size: 24px;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    60% {
+        transform: translateY(-2px);
+    }
+}
+
+.rank-number {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+.nickname {
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.likes, .gifts {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.score {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.empty-leaderboard {
+    text-align: center;
+    padding: 30px 20px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.empty-leaderboard p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Scrollbar styling */
+.leaderboard-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.leaderboard-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.leaderboard-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.leaderboard-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .leaderboard {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .leaderboard-header h2 {
+        font-size: 16px;
+    }
+    
+    .leaderboard-item {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+    
+    .rank-section {
+        min-width: 35px;
+    }
+    
+    .rank-number {
+        width: 26px;
+        height: 26px;
+        font-size: 14px;
+    }
+    
+    .medal {
+        font-size: 20px;
+    }
+    
+    .profile-pic {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .user-section {
+        gap: 10px;
+    }
+    
+    .nickname {
+        font-size: 14px;
+    }
+    
+    .stats {
+        font-size: 11px;
+        gap: 6px;
+    }
+    
+    .score {
+        font-size: 16px;
+    }
+    
+    .score-label {
+        font-size: 9px;
+    }
+} 

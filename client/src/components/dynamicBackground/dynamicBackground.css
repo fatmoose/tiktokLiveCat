@@ -1,0 +1,302 @@
+.dynamic-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    overflow: hidden;
+}
+
+/* Centered gradient base */
+.gradient-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at center,
+        rgba(138, 43, 226, 0.3) 0%,
+        rgba(30, 144, 255, 0.2) 30%,
+        rgba(0, 191, 255, 0.15) 60%,
+        rgba(25, 25, 112, 0.8) 100%
+    );
+    animation: gradientPulse 8s ease-in-out infinite;
+}
+
+@keyframes gradientPulse {
+    0%, 100% {
+        background: radial-gradient(
+            circle at center,
+            rgba(138, 43, 226, 0.3) 0%,
+            rgba(30, 144, 255, 0.2) 30%,
+            rgba(0, 191, 255, 0.15) 60%,
+            rgba(25, 25, 112, 0.8) 100%
+        );
+    }
+    50% {
+        background: radial-gradient(
+            circle at center,
+            rgba(255, 20, 147, 0.4) 0%,
+            rgba(138, 43, 226, 0.3) 30%,
+            rgba(30, 144, 255, 0.2) 60%,
+            rgba(25, 25, 112, 0.9) 100%
+        );
+    }
+}
+
+/* Centered floating particles */
+.particles-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8), transparent);
+    animation: float 10s linear infinite;
+    filter: blur(1px);
+}
+
+/* Center particles around the middle */
+.particle:nth-child(1) { 
+    left: 45%; top: 40%; width: 6px; height: 6px; 
+    animation-duration: 12s; animation-delay: 0s; 
+}
+.particle:nth-child(2) { 
+    left: 55%; top: 60%; width: 4px; height: 4px; 
+    animation-duration: 15s; animation-delay: -2s; 
+}
+.particle:nth-child(3) { 
+    left: 40%; top: 55%; width: 8px; height: 8px; 
+    animation-duration: 18s; animation-delay: -4s; 
+}
+.particle:nth-child(4) { 
+    left: 60%; top: 45%; width: 5px; height: 5px; 
+    animation-duration: 14s; animation-delay: -6s; 
+}
+.particle:nth-child(5) { 
+    left: 50%; top: 35%; width: 7px; height: 7px; 
+    animation-duration: 16s; animation-delay: -8s; 
+}
+.particle:nth-child(6) { 
+    left: 35%; top: 65%; width: 6px; height: 6px; 
+    animation-duration: 13s; animation-delay: -10s; 
+}
+.particle:nth-child(7) { 
+    left: 65%; top: 55%; width: 4px; height: 4px; 
+    animation-duration: 17s; animation-delay: -12s; 
+}
+.particle:nth-child(8) { 
+    left: 48%; top: 70%; width: 8px; height: 8px; 
+    animation-duration: 11s; animation-delay: -14s; 
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-200px) translateX(50px) rotate(180deg);
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-400px) translateX(-30px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Centered wave layer */
+.waves-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 50% 50%, rgba(30, 144, 255, 0.1) 0%, transparent 70%),
+        radial-gradient(circle at 60% 40%, rgba(138, 43, 226, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 40% 60%, rgba(255, 20, 147, 0.06) 0%, transparent 50%);
+    animation: waveMotion 20s ease-in-out infinite;
+}
+
+@keyframes waveMotion {
+    0%, 100% {
+        background: 
+            radial-gradient(circle at 50% 50%, rgba(30, 144, 255, 0.1) 0%, transparent 70%),
+            radial-gradient(circle at 60% 40%, rgba(138, 43, 226, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 40% 60%, rgba(255, 20, 147, 0.06) 0%, transparent 50%);
+    }
+    25% {
+        background: 
+            radial-gradient(circle at 60% 40%, rgba(30, 144, 255, 0.12) 0%, transparent 70%),
+            radial-gradient(circle at 40% 60%, rgba(138, 43, 226, 0.1) 0%, transparent 60%),
+            radial-gradient(circle at 50% 50%, rgba(255, 20, 147, 0.08) 0%, transparent 50%);
+    }
+    50% {
+        background: 
+            radial-gradient(circle at 40% 60%, rgba(30, 144, 255, 0.1) 0%, transparent 70%),
+            radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 60% 40%, rgba(255, 20, 147, 0.06) 0%, transparent 50%);
+    }
+    75% {
+        background: 
+            radial-gradient(circle at 50% 60%, rgba(30, 144, 255, 0.1) 0%, transparent 70%),
+            radial-gradient(circle at 40% 40%, rgba(138, 43, 226, 0.08) 0%, transparent 60%),
+            radial-gradient(circle at 60% 50%, rgba(255, 20, 147, 0.06) 0%, transparent 50%);
+    }
+}
+
+/* Centered disco lights */
+.disco-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+
+.disco-light {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(3px);
+    animation: discoRotate 8s linear infinite;
+}
+
+/* Position disco lights in a circle around center */
+.disco-light:nth-child(1) {
+    top: 30%; left: 50%; width: 40px; height: 40px;
+    background: radial-gradient(circle, rgba(255, 0, 100, 0.6), transparent);
+    animation-delay: 0s;
+}
+.disco-light:nth-child(2) {
+    top: 45%; left: 65%; width: 30px; height: 30px;
+    background: radial-gradient(circle, rgba(0, 255, 150, 0.6), transparent);
+    animation-delay: -1s;
+}
+.disco-light:nth-child(3) {
+    top: 60%; left: 60%; width: 50px; height: 50px;
+    background: radial-gradient(circle, rgba(150, 0, 255, 0.6), transparent);
+    animation-delay: -2s;
+}
+.disco-light:nth-child(4) {
+    top: 70%; left: 45%; width: 35px; height: 35px;
+    background: radial-gradient(circle, rgba(255, 200, 0, 0.6), transparent);
+    animation-delay: -3s;
+}
+.disco-light:nth-child(5) {
+    top: 60%; left: 30%; width: 45px; height: 45px;
+    background: radial-gradient(circle, rgba(0, 150, 255, 0.6), transparent);
+    animation-delay: -4s;
+}
+.disco-light:nth-child(6) {
+    top: 45%; left: 25%; width: 25px; height: 25px;
+    background: radial-gradient(circle, rgba(255, 100, 200, 0.6), transparent);
+    animation-delay: -5s;
+}
+
+@keyframes discoRotate {
+    0% {
+        transform: translateX(0) translateY(0) scale(0.5);
+        opacity: 0;
+    }
+    25% {
+        transform: translateX(20px) translateY(-10px) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(0) translateY(-20px) scale(1.2);
+        opacity: 0.8;
+    }
+    75% {
+        transform: translateX(-20px) translateY(-10px) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(0) translateY(0) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* Activity-based intensity scaling */
+.dynamic-background.calm {
+    opacity: 0.3;
+}
+
+.dynamic-background.low-activity {
+    opacity: 0.5;
+}
+
+.dynamic-background.medium-activity {
+    opacity: 0.7;
+}
+
+.dynamic-background.high-activity {
+    opacity: 0.9;
+}
+
+.dynamic-background.legendary-activity {
+    opacity: 1;
+}
+
+/* Enhance activity levels */
+.dynamic-background.high-activity .gradient-layer {
+    animation-duration: 4s;
+}
+
+.dynamic-background.legendary-activity .gradient-layer {
+    animation-duration: 2s;
+}
+
+.dynamic-background.high-activity .disco-light {
+    animation-duration: 4s;
+}
+
+.dynamic-background.legendary-activity .disco-light {
+    animation-duration: 2s;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .particle {
+        width: 3px !important;
+        height: 3px !important;
+    }
+    
+    .disco-light {
+        width: 20px !important;
+        height: 20px !important;
+        filter: blur(2px);
+    }
+    
+    .waves-layer {
+        opacity: 0.5;
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .gradient-layer,
+    .particle,
+    .waves-layer,
+    .disco-light {
+        animation: none !important;
+    }
+    
+    .dynamic-background {
+        background: linear-gradient(135deg, rgba(25, 25, 112, 0.8), rgba(138, 43, 226, 0.5));
+    }
+} 
