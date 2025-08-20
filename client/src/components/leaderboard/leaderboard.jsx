@@ -1,26 +1,29 @@
-import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import './leaderboard.css';
 
 const Leaderboard = ({ leaderboard }) => {
-    const [isVisible, setIsVisible] = useState(true);
-
+    // Format large numbers with K, M, B abbreviations
+    const formatNumber = (num) => {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        }
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        }
+        if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toString();
+    };
     return (
-        <div className={`leaderboard ${isVisible ? 'visible' : 'hidden'}`}>
+        <div className="leaderboard">
             <div className="leaderboard-header">
-                <h2>🏆 Top 12 Feeders</h2>
-                <button 
-                    className="toggle-btn"
-                    onClick={() => setIsVisible(!isVisible)}
-                >
-                    {isVisible ? '−' : '+'}
-                </button>
+                <h2>🏆 Top 10 Feeders</h2>
             </div>
             
-            {isVisible && (
-                <div className="leaderboard-content">
-                    <div className="leaderboard-list">
-                        {leaderboard.slice(0, 12).map((user, index) => (
+            <div className="leaderboard-content">
+                <div className="leaderboard-list">
+                    {leaderboard.slice(0, 10).map((user, index) => (
                             <div key={user.uniqueId} className={`leaderboard-item rank-${index + 1}`}>
                                 <div className="rank-section">
                                     {index + 1 <= 3 ? (
@@ -46,9 +49,9 @@ const Leaderboard = ({ leaderboard }) => {
                                     <div className="user-details">
                                         <div className="nickname">{user.nickname}</div>
                                         <div className="stats">
-                                            <span className="likes">❤️ {user.likes}</span>
+                                            <span className="likes">❤️ {formatNumber(user.likes)}</span>
                                             {user.gifts > 0 && (
-                                                <span className="gifts">🎁 {user.gifts}</span>
+                                                <span className="gifts">🎁 {formatNumber(user.gifts)}</span>
                                             )}
                                         </div>
                                     </div>
@@ -56,7 +59,7 @@ const Leaderboard = ({ leaderboard }) => {
                                 
                                 <div className="score-section">
                                     <div className="score">
-                                        {user.likes + user.totalValue * 10}
+                                        {formatNumber(user.likes + user.totalValue * 10)}
                                     </div>
                                     <div className="score-label">points</div>
                                 </div>
@@ -70,7 +73,6 @@ const Leaderboard = ({ leaderboard }) => {
                         </div>
                     )}
                 </div>
-            )}
         </div>
     );
 };

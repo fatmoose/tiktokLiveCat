@@ -2,12 +2,8 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import './floatingElements.css';
 
-const FloatingElements = ({ likeData, giftData, onElementHit }) => {
+const FloatingElements = ({ likeData, onElementHit }) => {
     const [floatingHearts, setFloatingHearts] = useState([]);
-    const [floatingFood, setFloatingFood] = useState([]);
-
-    // Food items for gifts
-    const foodItems = ['🍕', '🍔', '🍗', '🍎', '🍌', '🥩', '🥨', '🧀', '🥪', '🌮'];
 
     useEffect(() => {
         if (likeData && likeData.likeCount) {
@@ -18,25 +14,45 @@ const FloatingElements = ({ likeData, giftData, onElementHit }) => {
         }
     }, [likeData]);
 
-    useEffect(() => {
-        if (giftData && giftData.repeatCount) {
-            // Create food items for gifts
-            for (let i = 0; i < giftData.repeatCount; i++) {
-                createFloatingFood(i * 300); // Stagger the food items
-            }
-        }
-    }, [giftData]);
+    // Food animations removed - gifts no longer create floating food
 
     const createFloatingHeart = (delay = 0) => {
         const id = Date.now() + Math.random();
         const startSide = Math.random() < 0.5 ? 'left' : 'right';
         const startY = Math.random() * 60 + 20; // 20% to 80% from top
         
+        // Get toothless element position
+        const toothlessElement = document.getElementById('toothless-gif');
+        let targetX = window.innerWidth / 2; // fallback to center
+        let targetY = window.innerHeight / 2;
+        
+        if (toothlessElement) {
+            const rect = toothlessElement.getBoundingClientRect();
+            // Calculate target position relative to viewport
+            targetX = rect.left + rect.width / 2;
+            targetY = rect.top + rect.height / 2;
+            
+            // Account for the heart's starting position
+            // Hearts start at startY% from top, so we need to calculate transform offset
+            const heartStartY = (startY / 100) * window.innerHeight;
+            const heartStartX = startSide === 'left' ? -50 : window.innerWidth + 50;
+            
+            // Calculate the transform needed to reach target from start position
+            targetX = targetX - heartStartX;
+            targetY = targetY - heartStartY;
+            
+
+        }
+        
         const heart = {
             id,
             startSide,
             startY,
             delay,
+            targetX,
+            targetY,
+            profilePicture: likeData.profilePicture,
+            nickname: likeData.nickname,
             type: 'heart'
         };
 
@@ -49,29 +65,7 @@ const FloatingElements = ({ likeData, giftData, onElementHit }) => {
         }, 3000 + delay);
     };
 
-    const createFloatingFood = (delay = 0) => {
-        const id = Date.now() + Math.random();
-        const startSide = Math.random() < 0.5 ? 'left' : 'right';
-        const startY = Math.random() * 60 + 20; // 20% to 80% from top
-        const foodItem = foodItems[Math.floor(Math.random() * foodItems.length)];
-        
-        const food = {
-            id,
-            startSide,
-            startY,
-            delay,
-            foodItem,
-            type: 'food'
-        };
-
-        setFloatingFood(prev => [...prev, food]);
-
-        // Remove food after animation
-        setTimeout(() => {
-            setFloatingFood(prev => prev.filter(f => f.id !== id));
-            onElementHit('food');
-        }, 4000 + delay);
-    };
+    // createFloatingFood function removed
 
     return (
         <div className="floating-elements-container">
@@ -79,27 +73,28 @@ const FloatingElements = ({ likeData, giftData, onElementHit }) => {
             {floatingHearts.map((heart) => (
                 <div
                     key={heart.id}
-                    className={`floating-heart ${heart.startSide}`}
+                    className={`floating-heart ${heart.startSide} dynamic-target`}
                     style={{
                         top: `${heart.startY}%`,
                         animationDelay: `${heart.delay}ms`,
+                        '--target-x': `${heart.targetX}px`,
+                        '--target-y': `${heart.targetY}px`,
                     }}
                 >
-                    ❤️
-                </div>
-            ))}
-
-            {/* Floating Food */}
-            {floatingFood.map((food) => (
-                <div
-                    key={food.id}
-                    className={`floating-food ${food.startSide}`}
-                    style={{
-                        top: `${food.startY}%`,
-                        animationDelay: `${food.delay}ms`,
-                    }}
-                >
-                    {food.foodItem}
+                    <span className="heart-emoji">❤️</span>
+                    {heart.profilePicture && (
+                        <img 
+                            src={heart.profilePicture} 
+                            alt={heart.nickname || 'User'} 
+                            className="heart-profile-pic"
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                    )}
+                    {heart.nickname && (
+                        <span className="heart-username">{heart.nickname}</span>
+                    )}
                 </div>
             ))}
         </div>
@@ -108,7 +103,6 @@ const FloatingElements = ({ likeData, giftData, onElementHit }) => {
 
 FloatingElements.propTypes = {
     likeData: PropTypes.object,
-    giftData: PropTypes.object,
     onElementHit: PropTypes.func.isRequired,
 };
 

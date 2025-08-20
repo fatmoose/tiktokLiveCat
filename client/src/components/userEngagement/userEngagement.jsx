@@ -6,6 +6,20 @@ const UserEngagement = ({ totalLikes, totalGifts, isConnected }) => {
     const [currentTip, setCurrentTip] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
 
+    // Format large numbers with K, M, B abbreviations
+    const formatNumber = (num) => {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        }
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        }
+        if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toString();
+    };
+
     const tips = [
         {
             icon: "❤️",
@@ -87,12 +101,12 @@ const UserEngagement = ({ totalLikes, totalGifts, isConnected }) => {
                 <div className="engagement-stats">
                     <div className="stat">
                         <span className="stat-icon">❤️</span>
-                        <span className="stat-value">{totalLikes}</span>
+                        <span className="stat-value">{formatNumber(totalLikes)}</span>
                         <span className="stat-label">Likes</span>
                     </div>
                     <div className="stat">
                         <span className="stat-icon">🎁</span>
-                        <span className="stat-value">{totalGifts}</span>
+                        <span className="stat-value">{formatNumber(totalGifts)}</span>
                         <span className="stat-label">Gifts</span>
                     </div>
                 </div>

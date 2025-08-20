@@ -9,8 +9,9 @@ import Toothless from './components/toothless/toothless';
 import Counter from './components/counter/counter';
 import Leaderboard from './components/leaderboard/leaderboard';
 import GiftNotification from './components/giftNotification/giftNotification';
+import GiftPopupQueue from './components/giftPopupQueue/giftPopupQueue';
 import DynamicBackground from './components/dynamicBackground/dynamicBackground';
-import UserEngagement from './components/userEngagement/userEngagement';
+// import UserEngagement from './components/userEngagement/userEngagement'; // Removed - replaced with gift popups
 import FloatingElements from './components/floatingElements/floatingElements';
 import BossBattle from './components/bossBattle/bossBattle';
 
@@ -42,6 +43,7 @@ function App({ socket }) {
     const [recentGifts, setRecentGifts] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
     const [giftNotifications, setGiftNotifications] = useState([]);
+    const [giftPopups, setGiftPopups] = useState([]);
     
     // Floating elements
     const [lastLikeData, setLastLikeData] = useState(null);
@@ -57,7 +59,12 @@ function App({ socket }) {
         setLikeCount(newTotal);
         setActivityLevel(prev => prev + likeAmount);
         
-        setLastLikeData({ likeCount: likeAmount, timestamp: Date.now() });
+        setLastLikeData({ 
+            likeCount: likeAmount, 
+            timestamp: Date.now(),
+            profilePicture: `https://picsum.photos/50/50?random=${Math.floor(Math.random() * 100)}`,
+            nickname: `DemoUser${Math.floor(Math.random() * 100)}`
+        });
         
         setRecentLikes(prev => [
             { 
@@ -125,6 +132,27 @@ function App({ socket }) {
             }
         ]);
 
+        // Add to new gift popup queue for demo mode
+        const demoUser = `DemoUser${Math.floor(Math.random() * 100)}`;
+        setGiftPopups(prev => [
+            ...prev,
+            {
+                id: `demo-gift-${Date.now()}-${Math.random()}`,
+                user: demoUser,
+                nickname: demoUser,
+                uniqueId: demoUser.toLowerCase(),
+                profilePicture: '',
+                giftName: gift.name,
+                giftCount: giftAmount,
+                repeatCount: giftAmount,
+                diamondValue: gift.value,
+                coins: gift.value * giftAmount,
+                giftPictureUrl: '',
+                giftId: null,
+                timestamp: Date.now()
+            }
+        ]);
+
         // In demo mode, also simulate feeding the game
         if (demoMode && socket) {
             socket.emit('demoFeed', { 
@@ -136,6 +164,11 @@ function App({ socket }) {
         }
     };
 
+    // Handler for when gift popup is processed
+    const handleGiftProcessed = (giftId) => {
+        setGiftPopups(prev => prev.filter(gift => gift.id !== giftId));
+    };
+
     const resetDemo = () => {
         setLikeCount(0);
         setGiftCount(0);
@@ -143,6 +176,7 @@ function App({ socket }) {
         setRecentLikes([]);
         setRecentGifts([]);
         setGiftNotifications([]);
+        setGiftPopups([]);
         setLastLikeData(null);
         setLastGiftData(null);
     };
@@ -198,7 +232,12 @@ function App({ socket }) {
             setActivityLevel(prev => prev + newLikeCount);
             
             // Update floating elements
-            setLastLikeData({ likeCount: newLikeCount, timestamp: Date.now() });
+            setLastLikeData({ 
+                likeCount: newLikeCount, 
+                timestamp: Date.now(),
+                profilePicture: data.profilePictureUrl,
+                nickname: data.nickname 
+            });
             
             // Add to recent activity
             setRecentLikes(prev => [
@@ -238,7 +277,7 @@ function App({ socket }) {
                 ...prev.slice(0, 4)
             ]);
 
-            // Show gift notification
+            // Show gift notification (keep for backwards compatibility)
             setGiftNotifications(prev => [
                 ...prev,
                 {
@@ -249,6 +288,26 @@ function App({ socket }) {
                     giftCount: data.repeatCount || 1,
                     diamondValue: data.diamondCount || 1,
                     coins: data.coins || giftValue // Include coins for display
+                }
+            ]);
+
+            // Add to new gift popup queue
+            setGiftPopups(prev => [
+                ...prev,
+                {
+                    id: `gift-${Date.now()}-${Math.random()}`,
+                    user: data.user?.nickname || data.nickname || data.uniqueId || 'Anonymous',
+                    uniqueId: data.uniqueId,
+                    nickname: data.nickname,
+                    profilePicture: data.user?.profilePicture || data.profilePictureUrl || '',
+                    giftName: data.giftName || 'Gift',
+                    giftCount: data.repeatCount || 1,
+                    repeatCount: data.repeatCount || 1,
+                    diamondValue: data.diamondCount || 1,
+                    coins: data.coins || giftValue,
+                    giftPictureUrl: data.giftPictureUrl || '',
+                    giftId: data.giftId || null,
+                    timestamp: Date.now()
                 }
             ]);
         });
@@ -276,6 +335,7 @@ function App({ socket }) {
             setRecentGifts([]);
             setLeaderboard([]);
             setGiftNotifications([]);
+            setGiftPopups([]);
             setLastLikeData(null);
             setLastGiftData(null);
         });
@@ -366,7 +426,6 @@ function App({ socket }) {
             {/* Floating Elements */}
             <FloatingElements 
                 likeData={lastLikeData}
-                giftData={lastGiftData}
                 onElementHit={hitHandlerRef}
             />
             
@@ -377,6 +436,8 @@ function App({ socket }) {
                     {...notification}
                 />
             ))}
+
+
             
             {/* Main Content */}
             <div className="main-content">
@@ -460,10 +521,10 @@ function App({ socket }) {
                         </div>
                     )}
 
-                    {/* User Engagement Tips */}
-                    <UserEngagement 
-                        isConnected={isConnected || demoMode}
-                        activityLevel={activityLevel}
+                    {/* Gift Popup Queue - Moved from bottom to replace UserEngagement */}
+                    <GiftPopupQueue 
+                        gifts={giftPopups}
+                        onGiftProcessed={handleGiftProcessed}
                     />
                 </div>
                 

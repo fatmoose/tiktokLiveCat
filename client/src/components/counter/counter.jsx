@@ -6,6 +6,20 @@ const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
     const [displayLikes, setDisplayLikes] = useState(0);
     const [displayGifts, setDisplayGifts] = useState(0);
 
+    // Format large numbers with K, M, B abbreviations
+    const formatNumber = (num) => {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        }
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        }
+        if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toString();
+    };
+
     // Animate the counters
     useEffect(() => {
         const animateCounter = (target, setter, current) => {
@@ -30,16 +44,16 @@ const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
                 <div className="stat-item">
                     <div className="stat-icon">❤️</div>
                     <div className="stat-details">
-                        <div className="stat-value">{displayLikes.toLocaleString()}</div>
-                        <div className="stat-label">Total Likes</div>
+                        <div className="stat-value">{formatNumber(displayLikes)}</div>
+                        <div className="stat-label">TOTAL<br/>LIKES</div>
                     </div>
                 </div>
                 
                 <div className="stat-item">
                     <div className="stat-icon">🎁</div>
                     <div className="stat-details">
-                        <div className="stat-value">{displayGifts.toLocaleString()}</div>
-                        <div className="stat-label">Total Gifts</div>
+                        <div className="stat-value">{formatNumber(displayGifts)}</div>
+                        <div className="stat-label">TOTAL<br/>GIFTS</div>
                     </div>
                 </div>
                 

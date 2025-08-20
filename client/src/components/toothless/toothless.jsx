@@ -8,7 +8,7 @@ const Toothless = ({ activityLevel = 0, onElementHit }) => {
     const [animationClass, setAnimationClass] = useState('calm');
     const [isFeeding, setIsFeeding] = useState(false);
     const [isGlowing, setIsGlowing] = useState(false);
-    const [isVibrating, setIsVibrating] = useState(false);
+
     const [hitEffect, setHitEffect] = useState('');
     const { state } = useGame();
 
@@ -41,25 +41,21 @@ const Toothless = ({ activityLevel = 0, onElementHit }) => {
             // Create the hit effect function and pass it to parent
             const handleHit = (type) => {
                 if (type === 'heart') {
-                    // Heart hit: gentle glow and small vibration
+                    // Heart hit: gentle glow
                     setIsGlowing(true);
-                    setIsVibrating(true);
                     setHitEffect('heart-hit');
                     
                     setTimeout(() => {
                         setIsGlowing(false);
-                        setIsVibrating(false);
                         setHitEffect('');
                     }, 800);
                 } else if (type === 'food') {
-                    // Food hit: intense glow and strong vibration
+                    // Food hit: intense glow
                     setIsGlowing(true);
-                    setIsVibrating(true);
                     setHitEffect('food-hit');
                     
                     setTimeout(() => {
                         setIsGlowing(false);
-                        setIsVibrating(false);
                         setHitEffect('');
                     }, 1500);
                 }
@@ -81,7 +77,6 @@ const Toothless = ({ activityLevel = 0, onElementHit }) => {
         let classes = `toothless-dragon ${isFeeding ? 'feeding' : ''}`;
         
         if (isGlowing) classes += ' glowing';
-        if (isVibrating) classes += ' vibrating';
         if (hitEffect) classes += ` ${hitEffect}`;
         
         return classes;

@@ -173,7 +173,9 @@ io.on('connection', (socket) => {
                     user: user,
                     totalGifts: totalGifts,
                     giftValue: giftValue,
-                    coins: coins // Include the actual coins awarded
+                    coins: coins, // Include the actual coins awarded
+                    giftPictureUrl: msg.giftPictureUrl || '', // Include gift image if available
+                    giftId: msg.giftId || null // Include gift ID for fallback images
                 });
 
                 // Broadcast updated leaderboard
