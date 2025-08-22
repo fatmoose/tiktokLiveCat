@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import toothlessGif from '../../assets/toothless.gif';
 import { useGame } from '../../gameContext.jsx';
+import DancingPodium from '../dancingPodium/dancingPodium';
 import './toothless.css';
 
-const Toothless = ({ activityLevel = 0, onElementHit }) => {
+const Toothless = ({ activityLevel = 0, onElementHit, leaderboard = [] }) => {
     const [animationClass, setAnimationClass] = useState('calm');
     const [isFeeding, setIsFeeding] = useState(false);
     const [isGlowing, setIsGlowing] = useState(false);
@@ -85,39 +86,42 @@ const Toothless = ({ activityLevel = 0, onElementHit }) => {
 
 
     return (
-        <div className={`toothless-container ${animationClass} ${getSizeClass()}`}>
-            <div className="toothless-wrapper">
-                <img 
-                    src={toothlessGif} 
-                    alt="Toothless" 
-                    id='toothless-gif'
-                    className={getToothlessClasses()}
-                />
-                
-                {/* Activity indicators */}
-                {activityLevel > 50 && (
-                    <div className="activity-indicators">
-                        {[...Array(Math.min(Math.floor(activityLevel / 25), 8))].map((_, i) => (
-                            <div
-                                key={i}
-                                className="activity-sparkle"
-                                style={{
-                                    animationDelay: `${i * 0.2}s`,
-                                    left: `${20 + (i % 4) * 20}%`,
-                                    top: `${20 + Math.floor(i / 4) * 40}%`,
-                                }}
-                            />
-                        ))}
-                    </div>
-                )}
-                
-                {/* Hit effects */}
-                {isGlowing && (
-                    <div className={`hit-glow ${hitEffect}`}></div>
-                )}
-                
-
+        <div className="toothless-and-podium-container">
+            <div className={`toothless-container ${animationClass} ${getSizeClass()}`}>
+                <div className="toothless-wrapper">
+                    <img 
+                        src={toothlessGif} 
+                        alt="Toothless" 
+                        id='toothless-gif'
+                        className={getToothlessClasses()}
+                    />
+                    
+                    {/* Activity indicators */}
+                    {activityLevel > 50 && (
+                        <div className="activity-indicators">
+                            {[...Array(Math.min(Math.floor(activityLevel / 25), 8))].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="activity-sparkle"
+                                    style={{
+                                        animationDelay: `${i * 0.2}s`,
+                                        left: `${20 + (i % 4) * 20}%`,
+                                        top: `${20 + Math.floor(i / 4) * 40}%`,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* Hit effects */}
+                    {isGlowing && (
+                        <div className={`hit-glow ${hitEffect}`}></div>
+                    )}
+                </div>
             </div>
+            
+            {/* Dancing Podium underneath Toothless */}
+            <DancingPodium leaderboard={leaderboard} />
         </div>
     );
 };
@@ -125,6 +129,7 @@ const Toothless = ({ activityLevel = 0, onElementHit }) => {
 Toothless.propTypes = {
     activityLevel: PropTypes.number,
     onElementHit: PropTypes.func,
+    leaderboard: PropTypes.array,
 };
 
 export default Toothless;

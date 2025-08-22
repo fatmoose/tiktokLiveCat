@@ -86,6 +86,9 @@ const BossBattle = () => {
             setHitEffects(prev => prev.filter(h => h.id !== hitEffect.id));
           }, 1000);
           
+          // Remove projectile immediately on hit for better visual feedback
+          setToothlessProjectiles(prev => prev.filter(p => p.id !== projectile.id));
+          
           // Boss hit animation
           setBattleAnimations(prev => ({ ...prev, boss: 'hit' }));
           setTimeout(() => {
@@ -129,6 +132,9 @@ const BossBattle = () => {
           setTimeout(() => {
             setHitEffects(prev => prev.filter(h => h.id !== hitEffect.id));
           }, 1000);
+          
+          // Remove projectile immediately on hit for better visual feedback
+          setBossProjectiles(prev => prev.filter(p => p.id !== projectile.id));
           
           // Toothless hit animation
           setBattleAnimations(prev => ({ ...prev, toothless: 'hit' }));
@@ -377,7 +383,7 @@ const BossBattle = () => {
                   top: `${effect.y}%`
                 }}
               >
-
+                {effect.type === 'boss-hit' ? '💥' : '💫'}
               </div>
             ))}
             

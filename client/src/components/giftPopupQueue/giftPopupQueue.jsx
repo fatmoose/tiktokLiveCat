@@ -7,27 +7,175 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
     const [activePopups, setActivePopups] = useState([]);
     const [queue, setQueue] = useState([]);
     const [pausedDuringBattle, setPausedDuringBattle] = useState([]);
+    const [giftCombos, setGiftCombos] = useState({}); // Track gift combos by user+gift
+    const [popupTimers, setPopupTimers] = useState({}); // Track removal timers
     const MAX_POPUPS = 5;
-    const POPUP_DURATION = 6000; // 6 seconds base duration (increased from 4)
+    const POPUP_DURATION = 3000; // 3 seconds after last gift
+    const COMBO_WINDOW = 5000; // 5 seconds to combine same gifts from same user
     
     // Get game state to detect boss battles
     const { state: gameState } = useGame();
+    
+    // More responsive boss battle detection
     const isBossBattle = gameState?.phase === 'BOSS';
 
+    // Track processed gift IDs to prevent duplicates
+    const [processedGiftIds, setProcessedGiftIds] = useState(new Set());
+    
     // Process new gifts
     useEffect(() => {
         if (gifts && gifts.length > 0) {
-            const newGifts = gifts.filter(gift => 
-                !activePopups.some(popup => popup.id === gift.id) &&
-                !queue.some(queuedGift => queuedGift.id === gift.id)
-            );
+            // Only process gifts that haven't been processed yet
+            const newGifts = gifts.filter(gift => !processedGiftIds.has(gift.id));
 
             if (newGifts.length > 0) {
-                console.log('Gift popup data:', newGifts[0]); // Debug the gift data
-                setQueue(prev => [...prev, ...newGifts]);
+                console.log(`Processing ${newGifts.length} new gifts`); // Debug the gift data
+                
+                // Mark these gifts as processed immediately to prevent race conditions
+                setProcessedGiftIds(prev => {
+                    const newSet = new Set(prev);
+                    newGifts.forEach(gift => newSet.add(gift.id));
+                    return newSet;
+                });
+                
+                // Process each new gift
+                newGifts.forEach(gift => {
+                    const comboKey = `${gift.user || gift.uniqueId}_${gift.giftName}`;
+                    const existingCombo = giftCombos[comboKey];
+                    console.log(`Processing gift - User: ${gift.user || gift.uniqueId}, Gift: ${gift.giftName}, ComboKey: ${comboKey}`);
+                    
+                    // Check if we have an active combo for this user+gift (either in combos, active popups, or queue)
+                    const activePopup = activePopups.find(p => p.comboKey === comboKey);
+                    const queuedGift = queue.find(q => q.comboKey === comboKey);
+                    const shouldCombine = (existingCombo && (Date.now() - existingCombo.lastUpdate) < COMBO_WINDOW) || activePopup || queuedGift;
+                    
+                    if (shouldCombine) {
+                        // Update or create combo data
+                        const newCount = (existingCombo?.count || (activePopup?.comboCount || 1)) + (gift.giftCount || gift.repeatCount || 1);
+                        const newValue = (existingCombo?.totalValue || (activePopup?.comboValue || ((gift.diamondValue || 1) * (gift.giftCount || gift.repeatCount || 1)))) + ((gift.diamondValue || 1) * (gift.giftCount || gift.repeatCount || 1));
+                        
+                        setGiftCombos(prev => ({
+                            ...prev,
+                            [comboKey]: {
+                                count: newCount,
+                                totalValue: newValue,
+                                lastUpdate: Date.now(),
+                                scale: 1 // Keep scale constant at 1
+                            }
+                        }));
+                        
+                        if (activePopup) {
+                            // Update existing active popup
+                            const activePopupId = activePopup.id;
+                            
+                            // Cancel existing timer - use callback to ensure we get latest timer
+                            setPopupTimers(prev => {
+                                const existingTimer = prev[activePopupId];
+                                if (existingTimer) {
+                                    clearTimeout(existingTimer);
+                                    console.log(`Cleared existing timer for popup ${activePopupId}`);
+                                }
+                                // Return previous state for now, will be updated below
+                                return prev;
+                            });
+                            
+                            // Update popup data
+                            setActivePopups(prev => prev.map(popup => {
+                                if (popup.comboKey === comboKey) {
+                                    return {
+                                        ...popup,
+                                        comboCount: newCount,
+                                        comboValue: newValue,
+                                        scale: 1, // Keep scale constant at 1
+                                        lastComboTime: Date.now(),
+                                        isComboActive: true
+                                    };
+                                }
+                                return popup;
+                            }));
+                            
+                            // Clear the active flag after a short delay
+                            setTimeout(() => {
+                                setActivePopups(prev => prev.map(popup => {
+                                    if (popup.id === activePopupId) {
+                                        return { ...popup, isComboActive: false };
+                                    }
+                                    return popup;
+                                }));
+                            }, 300);
+                            
+                            // Set new timer based on total combo value (use higher of individual gift or combo value)
+                            const timerValue = Math.max(gift.diamondValue || 1, newValue);
+                            const duration = calculateDuration(timerValue);
+                            console.log(`Setting new timer for ${duration}ms based on value ${timerValue} for popup ${activePopupId}`);
+                            const newTimer = setTimeout(() => {
+                                console.log(`Timer expired for popup ${activePopupId}, removing...`);
+                                removePopup(activePopupId);
+                                // Clean up combo data after popup is removed
+                                setTimeout(() => {
+                                    setGiftCombos(prev => {
+                                        const newCombos = { ...prev };
+                                        delete newCombos[comboKey];
+                                        return newCombos;
+                                    });
+                                    // Clean up timer reference
+                                    setPopupTimers(prev => {
+                                        const newTimers = { ...prev };
+                                        delete newTimers[activePopupId];
+                                        return newTimers;
+                                    });
+                                }, 1000);
+                            }, duration);
+                            
+                            setPopupTimers(prev => {
+                                const newTimers = {
+                                    ...prev,
+                                    [activePopupId]: newTimer
+                                };
+                                console.log(`Stored timer for popup ${activePopupId}, total active timers:`, Object.keys(newTimers).length);
+                                return newTimers;
+                            });
+                        } else if (queuedGift) {
+                            // Gift already in queue with same combo key - update the queued gift's data
+                            setQueue(prev => prev.map(queueItem => {
+                                if (queueItem.comboKey === comboKey) {
+                                    return {
+                                        ...queueItem,
+                                        comboCount: newCount,
+                                        comboValue: newValue
+                                    };
+                                }
+                                return queueItem;
+                            }));
+                            console.log(`Updated queued gift for combo key: ${comboKey}`);
+                        } else {
+                            // No active popup or queued gift - create new popup with combo data
+                            setQueue(prev => [...prev, { ...gift, comboKey }]);
+                        }
+                        
+                        // Mark this gift as processed
+                        if (onGiftProcessed) {
+                            onGiftProcessed(gift.id);
+                        }
+                    } else {
+                        // Start new combo and add to queue
+                        setGiftCombos(prev => ({
+                            ...prev,
+                            [comboKey]: {
+                                count: gift.giftCount || gift.repeatCount || 1,
+                                totalValue: (gift.diamondValue || 1) * (gift.giftCount || gift.repeatCount || 1),
+                                lastUpdate: Date.now(),
+                                scale: 1 // Keep scale constant
+                            }
+                        }));
+                        
+                        // Add to queue with combo key
+                        setQueue(prev => [...prev, { ...gift, comboKey }]);
+                    }
+                });
             }
         }
-    }, [gifts, activePopups, queue]);
+    }, [gifts]); // Keep simple dependency to prevent loops - combo logic uses latest state via closures
 
     // Handle boss battle state changes
     useEffect(() => {
@@ -39,29 +187,61 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
                 setActivePopups([]);
             }
         } else {
-            // Boss battle ended - resume paused popups
+            // Boss battle ended - resume paused popups immediately
             if (pausedDuringBattle.length > 0) {
-                console.log('Boss battle ended - resuming gift popups');
+                console.log('Boss battle ended - resuming gift popups immediately');
                 setQueue(prev => [...pausedDuringBattle, ...prev]);
                 setPausedDuringBattle([]);
             }
         }
     }, [isBossBattle]); // Simplified dependency array to prevent loops
 
+    // Safety mechanism: Force resume if paused for more than 10 seconds
+    useEffect(() => {
+        if (pausedDuringBattle.length > 0) {
+            const forceResumeTimer = setTimeout(() => {
+                console.log('🔧 Force resuming gift popups - timeout exceeded');
+                setQueue(prev => [...pausedDuringBattle, ...prev]);
+                setPausedDuringBattle([]);
+            }, 10000); // 10 seconds timeout
+            
+            return () => clearTimeout(forceResumeTimer);
+        }
+    }, [pausedDuringBattle.length]);
+
     // Process queue when space is available and not in boss battle
     useEffect(() => {
         if (!isBossBattle && queue.length > 0 && activePopups.length < MAX_POPUPS) {
             const nextGift = queue[0];
+            
+            // Check if there's already an active popup for this combo key
+            const existingActivePopup = activePopups.find(p => p.comboKey === nextGift.comboKey);
+            
+            if (existingActivePopup) {
+                // Don't create duplicate popup, just remove from queue
+                setQueue(prev => prev.slice(1));
+                console.log(`Skipping duplicate popup for combo key: ${nextGift.comboKey}`);
+                return;
+            }
+            
             setQueue(prev => prev.slice(1));
             
-            // Calculate duration based on gift value
-            const duration = calculateDuration(nextGift.diamondValue || 1);
+            // Calculate duration based on combo value (or individual gift value if no combo)
+            const comboData = nextGift.comboKey ? giftCombos[nextGift.comboKey] : null;
+            const timerValue = comboData ? Math.max(comboData.totalValue, nextGift.diamondValue || 1) : (nextGift.diamondValue || 1);
+            const duration = calculateDuration(timerValue);
+            console.log(`Creating new popup for ${nextGift.comboKey} with duration ${duration}ms based on value ${timerValue}`);
             
             const popupData = {
                 ...nextGift,
                 startTime: Date.now(),
                 duration: duration,
-                isVisible: false
+                isVisible: false,
+                comboCount: comboData?.count || (nextGift.giftCount || nextGift.repeatCount || 1),
+                comboValue: comboData?.totalValue || ((nextGift.diamondValue || 1) * (nextGift.giftCount || nextGift.repeatCount || 1)),
+                scale: comboData?.scale || 1,
+                lastComboTime: Date.now(),
+                isComboActive: false
             };
 
             setActivePopups(prev => [...prev, popupData]);
@@ -169,19 +349,45 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
             }, 100);
 
             // Schedule removal
-            setTimeout(() => {
+            const removalTimer = setTimeout(() => {
                 removePopup(nextGift.id);
+                // Clean up combo data after popup is removed
+                if (nextGift.comboKey) {
+                    setTimeout(() => {
+                        setGiftCombos(prev => {
+                            const newCombos = { ...prev };
+                            delete newCombos[nextGift.comboKey];
+                            return newCombos;
+                        });
+                    }, 1000); // Give a 1 second grace period after removal
+                }
+                // Clean up timer reference
+                setPopupTimers(prev => {
+                    const newTimers = { ...prev };
+                    delete newTimers[nextGift.id];
+                    return newTimers;
+                });
             }, duration);
+            
+            // Store timer reference
+            setPopupTimers(prev => {
+                const newTimers = {
+                    ...prev,
+                    [nextGift.id]: removalTimer
+                };
+                console.log(`Stored initial timer for popup ${nextGift.id}, duration: ${duration}ms`);
+                return newTimers;
+            });
         }
-    }, [isBossBattle, queue, activePopups]);
+    }, [isBossBattle, queue.length, activePopups.length]); // Use lengths to prevent object comparison loops
 
     const calculateDuration = (diamondValue) => {
-        // Higher value gifts stay longer - increased all durations
-        if (diamondValue >= 1000) return 12000; // 12 seconds for very high value (was 8)
-        if (diamondValue >= 500) return 10000;  // 10 seconds for high value (was 6.5)
-        if (diamondValue >= 100) return 8000;   // 8 seconds for medium value (was 5.5)
-        if (diamondValue >= 50) return 7000;    // 7 seconds for low-medium value (was 5)
-        return 6000; // 6 seconds for low value (was 4)
+        // Higher value gifts stay longer on screen
+        if (diamondValue >= 1000) return 8000; // 8 seconds for legendary
+        if (diamondValue >= 500) return 6000;  // 6 seconds for epic
+        if (diamondValue >= 100) return 5000;  // 5 seconds for rare
+        if (diamondValue >= 50) return 4000;   // 4 seconds for uncommon
+        return POPUP_DURATION; // 3 seconds for common
     };
 
     const removePopup = useCallback((giftId) => {
@@ -201,6 +407,33 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
             }
         }, 500);
     }, [onGiftProcessed]);
+    
+    // Clean up timers on unmount
+    useEffect(() => {
+        return () => {
+            // Clean up all timers when component unmounts
+            Object.values(popupTimers).forEach(timer => {
+                if (timer) clearTimeout(timer);
+            });
+        };
+    }, []); // Empty dependency to only run on unmount
+    
+    // Clean up old processed gift IDs periodically to prevent memory leaks
+    useEffect(() => {
+        const cleanupInterval = setInterval(() => {
+            // Keep only gift IDs from the last 30 seconds
+            if (gifts && gifts.length > 0) {
+                const recentGiftIds = new Set(
+                    gifts
+                        .filter(gift => gift.timestamp && (Date.now() - gift.timestamp) < 30000)
+                        .map(gift => gift.id)
+                );
+                setProcessedGiftIds(recentGiftIds);
+            }
+        }, 30000); // Run cleanup every 30 seconds
+        
+        return () => clearInterval(cleanupInterval);
+    }, [gifts]);
 
     const getGiftTier = (diamondValue) => {
         if (diamondValue >= 1000) return 'legendary';
@@ -224,6 +457,14 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
         if (diamondValue >= 100) return '270'; // Purple
         if (diamondValue >= 50) return '120';  // Green
         return '200'; // Blue
+    };
+
+    const getPopupHeight = (diamondValue) => {
+        if (diamondValue >= 1000) return '95px';  // Legendary - tallest
+        if (diamondValue >= 500) return '85px';   // Epic - taller
+        if (diamondValue >= 100) return '80px';   // Rare - slightly taller
+        if (diamondValue >= 50) return '78px';    // Uncommon - a bit taller
+        return '75px'; // Common - standard height
     };
 
     const getGiftImage = (gift) => {
@@ -278,13 +519,14 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
             {activePopups.map((gift, index) => (
                 <div
                     key={gift.id}
-                    className={`tiktok-gift-popup ${getGiftTier(gift.diamondValue || 1)} ${
+                    className={`tiktok-gift-popup ${getGiftTier(gift.diamondValue || 1)} ${gift.isComboActive ? 'combo-receiving' : ''} ${
                         gift.isVisible ? 'visible' : ''
                     } ${gift.isRemoving ? 'removing' : ''}`}
                     style={{
                         '--popup-index': index,
                         '--popup-delay': `${index * 0.1}s`,
-                        '--tier-hue': getTierHue(gift.diamondValue || 1)
+                        '--tier-hue': getTierHue(gift.diamondValue || 1),
+                        height: getPopupHeight(gift.diamondValue || 1)
                     }}
                 >
                     {/* DOPAMINE-MAXIMIZING TikTok Layout */}
@@ -339,16 +581,13 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
                             </div>
                             <div className="gift-info-compact">
                                 <div className="gift-name-bold">{gift.giftName || 'Gift'}</div>
-                                {(gift.giftCount || gift.repeatCount) > 1 && (
-                                    <div className="gift-count-large">x{gift.giftCount || gift.repeatCount}</div>
-                                )}
                             </div>
                         </div>
 
                         {/* Right: Value with Emphasis */}
                         <div className="value-section">
                             <div className="diamond-count-large">
-                                💎{(gift.diamondValue || 1) * (gift.giftCount || gift.repeatCount || 1)}
+                                💎{gift.comboValue || ((gift.diamondValue || 1) * (gift.giftCount || gift.repeatCount || 1))}
                             </div>
                             <div className="thank-you-mini">Thank you!</div>
                         </div>
@@ -401,6 +640,14 @@ const GiftPopupQueue = ({ gifts, onGiftProcessed }) => {
 
                     {/* Pulsing border for all gifts */}
                     <div className="pulse-border"></div>
+                    
+                    {/* Epic Hit Counter - positioned at top right */}
+                    {(gift.comboCount || gift.giftCount || gift.repeatCount) > 1 && (
+                        <div className={`epic-hit-counter ${gift.comboCount >= 10 ? 'epic-combo' : gift.comboCount >= 5 ? 'mega-combo' : 'combo'}`}>
+                            <span className="combo-multiplier">x{gift.comboCount || gift.giftCount || gift.repeatCount}</span>
+                            <span className="combo-hit-text">HIT!</span>
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

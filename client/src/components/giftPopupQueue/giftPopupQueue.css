@@ -42,8 +42,8 @@
         hsl(var(--tier-hue, 200), 90%, 35%) 50%,
         hsl(var(--tier-hue, 200), 85%, 40%) 100%);
     border-radius: 20px;
-    padding: 12px 20px; /* Increased padding for more width */
-    height: 75px; /* Optimized height for better spacing */
+    padding: 12px 20px;
+    min-height: 75px; /* Base minimum height - can be overridden by inline style */
     min-width: 420px; /* Ensure minimum width for text */
     display: flex;
     align-items: center;
@@ -56,6 +56,21 @@
     transform: translateX(-120px) scale(0.7);
     transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     animation-delay: var(--popup-delay, 0s);
+}
+
+/* Removed combo-active scaling state - gifts now maintain consistent size */
+
+/* Active combo receiving state - bright green pulse */
+.tiktok-gift-popup.combo-receiving {
+    box-shadow: 
+        0 6px 30px rgba(0, 0, 0, 0.4),
+        0 0 50px rgba(0, 255, 0, 0.8),
+        0 0 100px rgba(0, 255, 0, 0.4);
+    animation: comboReceivingPulse 0.3s ease-out;
+}
+
+.tiktok-gift-popup.combo-receiving .gift-count-large {
+    animation: numberBump 0.3s ease-out;
 }
 
 .tiktok-gift-popup.visible {
@@ -76,6 +91,7 @@
         0 0 30px rgba(255, 215, 0, 0.8),
         0 4px 30px rgba(0, 0, 0, 0.4);
     animation: legendaryPulse 1s ease-in-out infinite alternate;
+    padding: 16px 24px; /* Extra padding for legendary gifts */
 }
 
 .tiktok-gift-popup.epic {
@@ -84,6 +100,7 @@
         0 0 25px rgba(255, 68, 68, 0.7),
         0 4px 25px rgba(0, 0, 0, 0.4);
     animation: epicGlow 1.2s ease-in-out infinite alternate;
+    padding: 14px 22px; /* Extra padding for epic gifts */
 }
 
 .tiktok-gift-popup.rare {
@@ -92,6 +109,7 @@
         0 0 20px rgba(170, 68, 255, 0.6),
         0 4px 20px rgba(0, 0, 0, 0.4);
     animation: rareShimmer 1.5s ease-in-out infinite alternate;
+    padding: 13px 21px; /* Slightly extra padding for rare gifts */
 }
 
 .tiktok-gift-popup.uncommon {
@@ -225,7 +243,7 @@
         0 2px 4px rgba(0, 0, 0, 0.8),
         0 0 20px rgba(255, 255, 255, 0.7) !important;
     margin-bottom: 2px;
-    white-space: nowrap;
+    white-space: nowrap; /* Keep on single line */
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 180px; /* Increased width for longer usernames */
@@ -269,6 +287,9 @@
     animation: realUserGlow 1.5s ease-in-out infinite alternate;
     display: block !important;
     opacity: 1 !important;
+    white-space: nowrap; /* Keep on single line */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @keyframes realUserGlow {
@@ -305,6 +326,9 @@
     animation: usernameGlow 2s ease-in-out infinite alternate;
     display: block !important;
     opacity: 1 !important;
+    white-space: nowrap; /* Keep on single line */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sent-text {
@@ -383,11 +407,252 @@
     padding: 2px 6px;
     border-radius: 10px;
     animation: countPulse 1s ease-in-out infinite alternate;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Epic Hit Counter System - Positioned at very corner */
+.epic-hit-counter {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    animation: comboCounterBounce 0.4s ease-out;
+    background: linear-gradient(135deg, #ff6b35 0%, #ffd700 100%);
+    border: 2px solid #ffffff;
+    box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 107, 53, 0.6),
+        inset 0 0 20px rgba(255, 255, 255, 0.3);
+    min-width: 45px;
+    min-height: 30px;
+    text-align: center;
+    font-weight: 900;
+    z-index: 15;
+    color: #ffffff;
+    text-shadow: 
+        0 0 10px rgba(255, 255, 255, 0.8),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 6px;
+    border-radius: 10px;
+}
+
+/* Regular combo (2-4 hits) */
+.epic-hit-counter.combo {
+    background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+    border-color: #87ceeb;
+    box-shadow: 
+        0 0 15px rgba(123, 104, 238, 0.6),
+        0 0 30px rgba(74, 144, 226, 0.4);
+}
+
+/* Mega combo (5-9 hits) */
+.epic-hit-counter.mega-combo {
+    background: linear-gradient(135deg, #ff6b35 0%, #ffd700 100%);
+    border-color: #ffd700;
+    box-shadow: 
+        0 0 25px rgba(255, 215, 0, 0.8),
+        0 0 50px rgba(255, 107, 53, 0.6);
+    animation: megaComboGlow 0.6s ease-out;
+    min-width: 50px;
+    min-height: 35px;
+    top: -22px;
+    right: -22px;
+}
+
+/* Epic combo (10+ hits) */
+.epic-hit-counter.epic-combo {
+    background: linear-gradient(135deg, #ff1744 0%, #e91e63 50%, #9c27b0 100%);
+    border: 3px solid #ffffff;
+    border-color: #ff4081;
+    box-shadow: 
+        0 0 40px rgba(255, 23, 68, 1),
+        0 0 80px rgba(233, 30, 99, 0.8),
+        0 0 120px rgba(156, 39, 176, 0.6);
+    animation: epicComboExplosion 0.8s ease-out;
+    transform: scale(1.15);
+    min-width: 55px;
+    min-height: 40px;
+    top: -25px;
+    right: -25px;
+}
+
+.combo-multiplier {
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1px;
+}
+
+.combo-hit-text {
+    font-size: 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+/* Epic combo specific styles */
+.epic-combo .combo-multiplier {
+    font-size: 16px;
+    animation: epicNumberPulse 0.3s ease-out;
+    background: linear-gradient(45deg, #ffffff, #ffeb3b, #ffffff);
+    background-size: 200% 200%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: epicTextShine 1s ease-in-out infinite;
+}
+
+.epic-combo .combo-hit-text {
+    font-size: 8px;
+    color: #ffeb3b;
+    text-shadow: 0 0 8px #ffeb3b;
+    animation: epicHitTextGlow 0.5s ease-out;
+}
+
+/* Removed scaling-dependent glow effect for combo counter */
 
 @keyframes countPulse {
     0% { transform: scale(1); }
     100% { transform: scale(1.1); }
+}
+
+/* Removed comboBouncePulse animation - no longer needed without scaling */
+
+@keyframes comboCounterBounce {
+    0% {
+        transform: scale(0.5) rotate(-10deg);
+    }
+    50% {
+        transform: scale(1.3) rotate(5deg);
+    }
+    75% {
+        transform: scale(0.9) rotate(-2deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Removed comboGlowPulse animation - no longer needed without scaling */
+
+/* Epic Hit Counter Animations */
+@keyframes megaComboGlow {
+    0% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.8),
+            0 0 50px rgba(255, 107, 53, 0.6);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 
+            0 0 35px rgba(255, 215, 0, 1),
+            0 0 70px rgba(255, 107, 53, 0.8);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.8),
+            0 0 50px rgba(255, 107, 53, 0.6);
+    }
+}
+
+@keyframes epicComboExplosion {
+    0% {
+        transform: scale(0.8);
+        box-shadow: 
+            0 0 20px rgba(255, 23, 68, 0.8),
+            0 0 40px rgba(233, 30, 99, 0.6);
+    }
+    30% {
+        transform: scale(1.4);
+        box-shadow: 
+            0 0 60px rgba(255, 23, 68, 1),
+            0 0 120px rgba(233, 30, 99, 1),
+            0 0 180px rgba(156, 39, 176, 0.8);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 
+            0 0 50px rgba(255, 23, 68, 1),
+            0 0 100px rgba(233, 30, 99, 0.9),
+            0 0 150px rgba(156, 39, 176, 0.7);
+    }
+    100% {
+        transform: scale(1.2);
+        box-shadow: 
+            0 0 40px rgba(255, 23, 68, 1),
+            0 0 80px rgba(233, 30, 99, 0.8),
+            0 0 120px rgba(156, 39, 176, 0.6);
+    }
+}
+
+@keyframes epicNumberPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes epicTextShine {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes epicHitTextGlow {
+    0% {
+        opacity: 0.9;
+        text-shadow: 0 0 5px #ffeb3b;
+    }
+    50% {
+        opacity: 1;
+        text-shadow: 0 0 20px #ffeb3b, 0 0 30px #ffeb3b;
+    }
+    100% {
+        opacity: 0.9;
+        text-shadow: 0 0 10px #ffeb3b;
+    }
+}
+
+@keyframes comboReceivingPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes numberBump {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* VALUE SECTION */
@@ -817,30 +1082,31 @@
 /* Mobile responsiveness - Maintain dopamine design */
 @media (max-width: 768px) {
     .gift-popup-queue {
-        max-width: 450px; /* Increased for mobile */
+        max-width: 520px; /* Increased for mobile vertical layout */
         gap: 10px;
     }
     
     .tiktok-gift-popup {
-        height: 80px;
-        padding: 10px 16px; /* Increased padding */
+        min-height: 68px; /* Compact height for mobile */
+        padding: 8px 14px; /* Compact padding for mobile */
         border-radius: 18px;
-        min-width: 380px; /* Ensure minimum width on mobile */
+        min-width: 440px; /* Width for mobile */
+        max-width: 500px; /* Maximum width for mobile */
     }
     
     .user-avatar-large {
-        width: 42px;
-        height: 42px;
+        width: 36px; /* Compact avatar for mobile */
+        height: 36px;
     }
     
     .avatar-fallback-large {
-        font-size: 20px;
+        font-size: 16px; /* Smaller for mobile compact layout */
     }
     
     .username-hero {
         font-size: 16px !important;
-        max-width: 160px; /* Increased for mobile */
-        line-height: 1.1;
+        max-width: 250px; /* Increased for mobile vertical layout */
+        line-height: 1.2;
     }
     
     .username-hero.real-user {
@@ -882,29 +1148,30 @@
 
 @media (max-width: 480px) {
     .gift-popup-queue {
-        max-width: 380px; /* Increased for small mobile */
+        max-width: 450px; /* Increased for small mobile vertical layout */
         gap: 8px;
     }
     
     .tiktok-gift-popup {
-        height: 75px;
-        padding: 8px 14px; /* Increased padding */
-        gap: 10px;
-        min-width: 340px; /* Ensure minimum width */
+        min-height: 65px; /* Compact height for small mobile */
+        padding: 6px 12px; /* Extra compact padding for small mobile */
+        gap: 6px; /* Minimal gap for compact mobile layout */
+        min-width: 380px; /* Width for small mobile */
+        max-width: 420px; /* Maximum width for small mobile */
     }
     
     .user-avatar-large {
-        width: 38px;
-        height: 38px;
+        width: 32px; /* Compact avatar for small mobile */
+        height: 32px;
     }
     
     .avatar-fallback-large {
-        font-size: 18px;
+        font-size: 14px; /* Smaller for small mobile compact layout */
     }
     
     .username-hero {
         font-size: 15px !important;
-        max-width: 140px; /* Increased for small mobile */
+        max-width: 220px; /* Increased for small mobile vertical layout */
         line-height: 1.1;
     }
     
@@ -934,5 +1201,34 @@
     .diamond-count-large {
         font-size: 11px;
         padding: 4px 7px;
+    }
+}
+
+/* Countdown bar for combos */
+.combo-countdown-bar {
+    position: absolute;
+    bottom: -8px;
+    left: 10px;
+    right: 10px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.countdown-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b35 0%, #ffd700 100%);
+    width: 100%;
+    animation: countdownTimer 3s linear forwards;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes countdownTimer {
+    0% {
+        width: 100%;
+    }
+    100% {
+        width: 0%;
     }
 }

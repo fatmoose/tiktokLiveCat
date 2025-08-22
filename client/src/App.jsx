@@ -13,7 +13,7 @@ import GiftPopupQueue from './components/giftPopupQueue/giftPopupQueue';
 import DynamicBackground from './components/dynamicBackground/dynamicBackground';
 // import UserEngagement from './components/userEngagement/userEngagement'; // Removed - replaced with gift popups
 import FloatingElements from './components/floatingElements/floatingElements';
-import BossBattle from './components/bossBattle/bossBattle';
+
 
 import './App.css';
 
@@ -37,6 +37,9 @@ function App({ socket }) {
     const [giftCount, setGiftCount] = useState(0);
 
     const [activityLevel, setActivityLevel] = useState(0);
+    
+    // Gift counter for unique IDs
+    const giftCounterRef = useRef(0);
     
     // Recent activity and leaderboard
     const [recentLikes, setRecentLikes] = useState([]);
@@ -134,10 +137,11 @@ function App({ socket }) {
 
         // Add to new gift popup queue for demo mode
         const demoUser = `DemoUser${Math.floor(Math.random() * 100)}`;
+        giftCounterRef.current += 1;
         setGiftPopups(prev => [
             ...prev,
             {
-                id: `demo-gift-${Date.now()}-${Math.random()}`,
+                id: `demo-gift-${Date.now()}-${giftCounterRef.current}-${demoUser}-${gift.name}`,
                 user: demoUser,
                 nickname: demoUser,
                 uniqueId: demoUser.toLowerCase(),
@@ -292,10 +296,11 @@ function App({ socket }) {
             ]);
 
             // Add to new gift popup queue
+            giftCounterRef.current += 1;
             setGiftPopups(prev => [
                 ...prev,
                 {
-                    id: `gift-${Date.now()}-${Math.random()}`,
+                    id: `gift-${Date.now()}-${giftCounterRef.current}-${data.uniqueId}-${data.giftName}`,
                     user: data.user?.nickname || data.nickname || data.uniqueId || 'Anonymous',
                     uniqueId: data.uniqueId,
                     nickname: data.nickname,
@@ -441,11 +446,8 @@ function App({ socket }) {
             
             {/* Main Content */}
             <div className="main-content">
-                {/* Left Side - Boss Battle & Connection Controls */}
+                {/* Left Side - Stats & Connection Controls */}
                 <div className="left-panel">
-                    {/* Boss Battle & Goal Progress */}
-                    <BossBattle />
-                    
                     {/* Stats Display */}
                     <Counter 
                         data={lastLikeData}
@@ -533,6 +535,7 @@ function App({ socket }) {
                     <Toothless 
                         activityLevel={activityLevel}
                         onElementHit={handleElementHit}
+                        leaderboard={leaderboard}
                     />
                 </div>
                 
