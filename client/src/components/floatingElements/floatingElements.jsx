@@ -14,7 +14,7 @@ const FloatingElements = ({ likeData, onElementHit }) => {
         }
     }, [likeData]);
 
-    // Food animations removed - gifts no longer create floating food
+
 
     const createFloatingHeart = (delay = 0) => {
         const id = Date.now() + Math.random();

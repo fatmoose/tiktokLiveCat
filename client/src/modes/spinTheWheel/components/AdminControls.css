@@ -1,0 +1,198 @@
+.admin-controls {
+  background: linear-gradient(145deg, rgba(30, 60, 114, 0.4), rgba(15, 28, 61, 0.6));
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  background: rgba(255, 215, 0, 0.1);
+  transition: background 0.3s ease;
+}
+
+.admin-header:hover {
+  background: rgba(255, 215, 0, 0.15);
+}
+
+.admin-header h3 {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.expand-icon {
+  color: #ffd700;
+  transition: transform 0.3s ease;
+}
+
+.admin-controls.expanded .expand-icon {
+  transform: rotate(90deg);
+}
+
+/* Admin Content */
+.admin-content {
+  padding: 20px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.admin-section h4 {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin: 0 0 15px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Buttons */
+.admin-button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  color: #1a1a2e;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+}
+
+.admin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Input Fields */
+.setting-group {
+  margin-bottom: 15px;
+}
+
+.setting-group label {
+  display: block;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.setting-group input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.setting-group input[type="number"]:focus {
+  outline: none;
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Toggle Switches */
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.toggle-label input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 25px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-switch {
+  background: rgba(255, 215, 0, 0.5);
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-switch::after {
+  transform: translateX(25px);
+}
+
+/* Stats Section */
+.admin-section.stats {
+  background: rgba(255, 215, 0, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.stat-value {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.1rem;
+}

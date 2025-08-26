@@ -24,169 +24,27 @@ body {
   overflow: hidden;
 }
 
-.app {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-  font-family: 'Arial', sans-serif;
-}
-
-.main-content {
-  position: relative;
-  display: grid;
-      grid-template-columns: 280px 1fr 470px;
-  grid-template-areas: "left center right";
-  min-height: 100vh;
-  padding: 20px;
-  gap: 25px;
-  z-index: 10;
-}
-
-/* Left Panel - Connection Controls */
-.left-panel {
-  grid-area: left;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: flex-start;
-}
-
-/* Center Content - Toothless */
-.center-content {
-  grid-area: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Right Panel - Stats and Leaderboard */
-.right-panel {
-  grid-area: right;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  align-items: flex-end;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .main-content {
-    grid-template-columns: 250px 1fr 370px;
-    padding: 15px;
-    gap: 15px;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    grid-template-columns: 1fr;
-    grid-template-areas: 
-      "center"
-      "left"
-      "right";
-    padding: 10px;
-    gap: 20px;
-    min-height: auto;
-  }
-  
-  .left-panel,
-  .right-panel {
-    align-items: center;
-    width: 100%;
-  }
-  
-  .left-panel {
-    order: 2;
-  }
-  
-  .center-content {
-    order: 1;
-    min-height: 60vh;
-  }
-  
-  .right-panel {
-    order: 3;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-content {
-    padding: 10px;
-    gap: 15px;
-  }
-  
-  .center-content {
-    min-height: 50vh;
-  }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.left-panel,
-.center-content,
-.right-panel {
-  animation: fadeIn 0.6s ease-out;
-}
-
-.left-panel {
-  animation-delay: 0.1s;
-}
-
-.center-content {
-  animation-delay: 0.2s;
-}
-
-.right-panel {
-  animation-delay: 0.3s;
-}
-
-/* Scrollbar styling for panels */
-.left-panel::-webkit-scrollbar,
-.right-panel::-webkit-scrollbar {
+/* Scrollbar styling */
+::-webkit-scrollbar {
   width: 8px;
 }
 
-.left-panel::-webkit-scrollbar-track,
-.right-panel::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
-.left-panel::-webkit-scrollbar-thumb,
-.right-panel::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
 }
 
-.left-panel::-webkit-scrollbar-thumb:hover,
-.right-panel::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
-}
-
-/* Performance optimizations */
-.app * {
-  will-change: auto;
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .left-panel,
-  .center-content,
-  .right-panel {
-    animation: none !important;
-  }
-  
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

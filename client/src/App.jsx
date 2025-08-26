@@ -1,379 +1,104 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import io from 'socket.io-client';
 import { config } from './config';
-import GameProvider, { useGame } from './gameContext.jsx';
+import GameProvider from './gameContext.jsx';
+import { getModeById } from './modes/modeConfig';
 
 // Components
-import LoginScreen from './components/loginScreen/loginScreen';
-import Toothless from './components/toothless/toothless';
-import Counter from './components/counter/counter';
-import Leaderboard from './components/leaderboard/leaderboard';
-import GiftNotification from './components/giftNotification/giftNotification';
-import GiftPopupQueue from './components/giftPopupQueue/giftPopupQueue';
-import DynamicBackground from './components/dynamicBackground/dynamicBackground';
-// import UserEngagement from './components/userEngagement/userEngagement'; // Removed - replaced with gift popups
-import FloatingElements from './components/floatingElements/floatingElements';
+import ModeSelection from './components/modeSelection/modeSelection';
 
+// Mode components are now loaded dynamically from modeConfig
 
 import './App.css';
 
 function App({ socket }) {
-    // Add useGame hook to get server state
-    const { state: gameState } = useGame();
-    
     // Connection state
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isConnecting, setIsConnecting] = useState(false);
-    const [connectionError, setConnectionError] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const [connectionState, setConnectionState] = useState('DISCONNECTED');
     const [connectedUsername, setConnectedUsername] = useState('');
-
-    // Demo mode state
+    const [connectionError, setConnectionError] = useState('');
     const [demoMode, setDemoMode] = useState(false);
-
-    // Socket and data state - now using passed socket
-    const [likeCount, setLikeCount] = useState(0);
-    const [giftCount, setGiftCount] = useState(0);
-
-    const [activityLevel, setActivityLevel] = useState(0);
     
-    // Gift counter for unique IDs
-    const giftCounterRef = useRef(0);
+    // Mode state
+    const [currentMode, setCurrentMode] = useState(null);
     
-    // Recent activity and leaderboard
-    const [recentLikes, setRecentLikes] = useState([]);
-    const [recentGifts, setRecentGifts] = useState([]);
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [giftNotifications, setGiftNotifications] = useState([]);
-    const [giftPopups, setGiftPopups] = useState([]);
-    
-    // Floating elements
-    const [lastLikeData, setLastLikeData] = useState(null);
-    const [lastGiftData, setLastGiftData] = useState(null);
-    const [hitHandlerRef, setHitHandlerRef] = useState(null);
-
-
-
-    // Demo functions
-    const simulateLike = () => {
-        const likeAmount = Math.floor(Math.random() * 5) + 1; // 1-5 likes
-        const newTotal = likeCount + likeAmount;
-        setLikeCount(newTotal);
-        setActivityLevel(prev => prev + likeAmount);
-        
-        setLastLikeData({ 
-            likeCount: likeAmount, 
-            timestamp: Date.now(),
-            profilePicture: `https://picsum.photos/50/50?random=${Math.floor(Math.random() * 100)}`,
-            nickname: `DemoUser${Math.floor(Math.random() * 100)}`
-        });
-        
-        setRecentLikes(prev => [
-            { 
-                id: Date.now(), 
-                user: `DemoUser${Math.floor(Math.random() * 100)}`, 
-                count: likeAmount,
-                timestamp: Date.now()
-            },
-            ...prev.slice(0, 4)
-        ]);
-
-        // In demo mode, also simulate feeding the game
-        if (demoMode && socket) {
-            socket.emit('demoFeed', { 
-                type: 'like', 
-                amount: likeAmount, 
-                user: `DemoUser${Math.floor(Math.random() * 100)}` 
-            });
+    // Check URL parameters on mount
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode');
+        if (mode) {
+            setCurrentMode(mode);
         }
-    };
+    }, []);
 
-    const simulateGift = () => {
-        const gifts = [
-            { name: 'Rose', value: 1 },
-            { name: 'Heart', value: 5 },
-            { name: 'Star', value: 10 },
-            { name: 'Crown', value: 50 },
-            { name: 'Galaxy', value: 1000 }
-        ];
-        
-        const gift = gifts[Math.floor(Math.random() * gifts.length)];
-        const giftAmount = Math.floor(Math.random() * 3) + 1; // 1-3 gifts
-        const newTotal = giftCount + giftAmount;
-        setGiftCount(newTotal);
-        setActivityLevel(prev => prev + gift.value * giftAmount * 10);
-        
-        setLastGiftData({ 
-            repeatCount: giftAmount, 
-            giftName: gift.name,
-            timestamp: Date.now() 
-        });
-        
-        setRecentGifts(prev => [
-            { 
-                id: Date.now(), 
-                user: `DemoUser${Math.floor(Math.random() * 100)}`, 
-                gift: gift.name,
-                count: giftAmount,
-                timestamp: Date.now()
-            },
-            ...prev.slice(0, 4)
-        ]);
-
-        // Show gift notification
-        setGiftNotifications(prev => [
-            ...prev,
-            {
-                id: Date.now(),
-                user: `DemoUser${Math.floor(Math.random() * 100)}`,
-                profilePicture: '',
-                giftName: gift.name,
-                giftCount: giftAmount,
-                diamondValue: gift.value,
-                coins: gift.value * giftAmount
-            }
-        ]);
-
-        // Add to new gift popup queue for demo mode
-        const demoUser = `DemoUser${Math.floor(Math.random() * 100)}`;
-        giftCounterRef.current += 1;
-        setGiftPopups(prev => [
-            ...prev,
-            {
-                id: `demo-gift-${Date.now()}-${giftCounterRef.current}-${demoUser}-${gift.name}`,
-                user: demoUser,
-                nickname: demoUser,
-                uniqueId: demoUser.toLowerCase(),
-                profilePicture: '',
-                giftName: gift.name,
-                giftCount: giftAmount,
-                repeatCount: giftAmount,
-                diamondValue: gift.value,
-                coins: gift.value * giftAmount,
-                giftPictureUrl: '',
-                giftId: null,
-                timestamp: Date.now()
-            }
-        ]);
-
-        // In demo mode, also simulate feeding the game
-        if (demoMode && socket) {
-            socket.emit('demoFeed', { 
-                type: 'gift', 
-                amount: gift.value * giftAmount, 
-                user: `DemoUser${Math.floor(Math.random() * 100)}`,
-                giftName: gift.name
-            });
-        }
-    };
-
-    // Handler for when gift popup is processed
-    const handleGiftProcessed = (giftId) => {
-        setGiftPopups(prev => prev.filter(gift => gift.id !== giftId));
-    };
-
-    const resetDemo = () => {
-        setLikeCount(0);
-        setGiftCount(0);
-        setActivityLevel(0);
-        setRecentLikes([]);
-        setRecentGifts([]);
-        setGiftNotifications([]);
-        setGiftPopups([]);
-        setLastLikeData(null);
-        setLastGiftData(null);
-    };
 
     // Initialize socket connection
     useEffect(() => {
-        if (isLoggedIn && socket && !demoMode) {
-            setupSocketListeners();
-        }
-    }, [isLoggedIn, socket, demoMode]);
-
-    const setupSocketListeners = () => {
         if (!socket) return;
 
-        socket.on('connect', () => {
+        const handleConnect = () => {
             console.log('Connected to server');
-        });
+        };
 
-        socket.on('disconnect', () => {
+        const handleDisconnect = () => {
             console.log('Disconnected from server');
             setIsConnected(false);
             setConnectionState('DISCONNECTED');
-        });
+        };
 
-        socket.on('tiktokConnected', (state) => {
+        const handleTikTokConnected = (state) => {
             console.log('TikTok connected:', state);
             setIsConnected(true);
             setConnectionState('CONNECTED');
             setConnectedUsername(state.uniqueId);
             setConnectionError('');
-        });
+        };
 
-        socket.on('tiktokDisconnected', (reason) => {
+        const handleTikTokDisconnected = (reason) => {
             console.log('TikTok disconnected:', reason);
             setIsConnected(false);
             setConnectionState('DISCONNECTED');
             setConnectedUsername('');
-        });
+        };
 
-        socket.on('connectionError', (error) => {
+        const handleConnectionError = (error) => {
             console.error('Connection error:', error);
             setConnectionError(error.message || 'Failed to connect to TikTok Live');
-            setIsConnecting(false);
             setConnectionState('DISCONNECTED');
-        });
+        };
 
-        // Data events
-        socket.on('like', (data) => {
-            console.log('Like received:', data);
-            const newLikeCount = data.likeCount || 1;
-            // Use server's totalLikes instead of incrementing locally
-            setLikeCount(data.totalLikes || 0);
-            setActivityLevel(prev => prev + newLikeCount);
-            
-            // Update floating elements
-            setLastLikeData({ 
-                likeCount: newLikeCount, 
-                timestamp: Date.now(),
-                profilePicture: data.profilePictureUrl,
-                nickname: data.nickname 
-            });
-            
-            // Add to recent activity
-            setRecentLikes(prev => [
-                { 
-                    id: Date.now(), 
-                    user: data.nickname || 'Anonymous', 
-                    count: newLikeCount,
-                    timestamp: Date.now()
-                },
-                ...prev.slice(0, 4)
-            ]);
-        });
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        socket.on('tiktokConnected', handleTikTokConnected);
+        socket.on('tiktokDisconnected', handleTikTokDisconnected);
+        socket.on('connectionError', handleConnectionError);
 
-        socket.on('gift', (data) => {
-            console.log('Gift received:', data);
-            const giftValue = (data.diamondCount || 1) * (data.repeatCount || 1);
-            // Use server's totalGifts instead of incrementing locally
-            setGiftCount(data.totalGifts || 0);
-            setActivityLevel(prev => prev + giftValue * 10); // Gifts worth more activity
-            
-            // Update floating elements
-            setLastGiftData({ 
-                repeatCount: data.repeatCount || 1, 
-                giftName: data.giftName,
-                timestamp: Date.now() 
-            });
-            
-            // Add to recent activity
-            setRecentGifts(prev => [
-                { 
-                    id: Date.now(), 
-                    user: data.nickname || 'Anonymous', 
-                    gift: data.giftName || 'Gift',
-                    count: data.repeatCount || 1,
-                    timestamp: Date.now()
-                },
-                ...prev.slice(0, 4)
-            ]);
+        return () => {
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+            socket.off('tiktokConnected', handleTikTokConnected);
+            socket.off('tiktokDisconnected', handleTikTokDisconnected);
+            socket.off('connectionError', handleConnectionError);
+        };
+    }, [socket]);
 
-            // Show gift notification (keep for backwards compatibility)
-            setGiftNotifications(prev => [
-                ...prev,
-                {
-                    id: Date.now(),
-                    user: data.nickname || 'Anonymous',
-                    profilePicture: data.profilePictureUrl,
-                    giftName: data.giftName || 'Gift',
-                    giftCount: data.repeatCount || 1,
-                    diamondValue: data.diamondCount || 1,
-                    coins: data.coins || giftValue // Include coins for display
-                }
-            ]);
-
-            // Add to new gift popup queue
-            giftCounterRef.current += 1;
-            setGiftPopups(prev => [
-                ...prev,
-                {
-                    id: `gift-${Date.now()}-${giftCounterRef.current}-${data.uniqueId}-${data.giftName}`,
-                    user: data.user?.nickname || data.nickname || data.uniqueId || 'Anonymous',
-                    uniqueId: data.uniqueId,
-                    nickname: data.nickname,
-                    profilePicture: data.user?.profilePicture || data.profilePictureUrl || '',
-                    giftName: data.giftName || 'Gift',
-                    giftCount: data.repeatCount || 1,
-                    repeatCount: data.repeatCount || 1,
-                    diamondValue: data.diamondCount || 1,
-                    coins: data.coins || giftValue,
-                    giftPictureUrl: data.giftPictureUrl || '',
-                    giftId: data.giftId || null,
-                    timestamp: Date.now()
-                }
-            ]);
-        });
-
-        socket.on('leaderboardUpdate', (data) => {
-            setLeaderboard(data);
-        });
-
-        // Listen for statsUpdate events from server (sent every 10 seconds)
-        socket.on('statsUpdate', (data) => {
-            console.log('Stats update received:', data);
-            // Update overall stats from server
-            setLikeCount(data.totalLikes || 0);
-            setGiftCount(data.totalGifts || 0);
-            setLeaderboard(data.leaderboard || []);
-        });
-
-        socket.on('connectionReset', (data) => {
-            console.log('Connection reset:', data.message);
-            // Reset all local state for fresh start
-            setLikeCount(0);
-            setGiftCount(0);
-            setActivityLevel(0);
-            setRecentLikes([]);
-            setRecentGifts([]);
-            setLeaderboard([]);
-            setGiftNotifications([]);
-            setGiftPopups([]);
-            setLastLikeData(null);
-            setLastGiftData(null);
-        });
-    };
-
-    // Handle login
-    const handleLogin = (username) => {
-        setIsConnecting(true);
+    // Handle connection
+    const handleConnect = (username) => {
         setConnectionError('');
         
         // Check if demo mode
         if (username.toLowerCase() === 'demo' || username.toLowerCase() === 'test') {
             setDemoMode(true);
-            setIsLoggedIn(true);
-            setIsConnecting(false);
             setIsConnected(true);
             setConnectionState('DEMO MODE');
             setConnectedUsername('Demo Mode');
             return;
         }
         
-        // Simulate connection process
-        setTimeout(() => {
-            setIsLoggedIn(true);
-            setIsConnecting(false);
-            
-            // Connect to TikTok after login
-            setTimeout(() => {
-                if (socket) {
-                    socket.emit('setUniqueId', username);
-                }
-            }, 500);
-        }, 1000);
+        // Connect to TikTok
+        if (socket) {
+            socket.emit('setUniqueId', username);
+        }
     };
 
     // Handle disconnect
@@ -385,170 +110,72 @@ function App({ socket }) {
         setConnectionState('DISCONNECTED');
         setConnectedUsername('');
         setDemoMode(false);
+        setCurrentMode(null);
+        
+        // Clear URL parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        window.history.replaceState({}, '', url);
     };
 
-    // Activity level decay
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActivityLevel(prev => Math.max(0, prev * 0.98)); // Gradual decay
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    // Remove old notifications
-    useEffect(() => {
-        const cleanup = setInterval(() => {
-            setGiftNotifications(prev => 
-                prev.filter(notification => Date.now() - notification.id < 5000)
-            );
-        }, 1000);
-
-        return () => clearInterval(cleanup);
-    }, []);
-
-    // Handle floating element hits
-    const handleElementHit = (hitHandler) => {
-        setHitHandlerRef(() => hitHandler);
+    // Handle mode selection
+    const handleModeSelect = (mode) => {
+        setCurrentMode(mode);
+        
+        // Update URL
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', mode);
+        window.history.pushState({}, '', url);
     };
 
-    // If not logged in, show login screen
-    if (!isLoggedIn) {
+    // Render mode selection or game mode
+    if (!currentMode) {
         return (
-            <LoginScreen 
-                onConnect={handleLogin}
-                isConnecting={isConnecting}
-                connectionError={connectionError}
+            <ModeSelection 
+                onModeSelect={handleModeSelect}
+                socket={socket}
+                isConnected={isConnected}
+                connectionState={connectionState}
+                connectedUsername={connectedUsername}
+                onConnect={handleConnect}
+                onDisconnect={handleDisconnect}
             />
         );
     }
 
+    // Render selected mode
+    const modeConfig = getModeById(currentMode);
+    
+    if (!modeConfig || !modeConfig.available) {
+        // Fallback to mode selection if invalid mode
+        setCurrentMode(null);
+        return null;
+    }
+    
+    // Dynamically load the mode component
+    const ModeComponent = lazy(modeConfig.component);
+    
     return (
-        <div className="app">
-            {/* Dynamic Background */}
-            <DynamicBackground activityLevel={activityLevel} />
-            
-            {/* Floating Elements */}
-            <FloatingElements 
-                likeData={lastLikeData}
-                onElementHit={hitHandlerRef}
-            />
-            
-            {/* Gift Notifications */}
-            {giftNotifications.map((notification) => (
-                <GiftNotification 
-                    key={notification.id}
-                    {...notification}
-                />
-            ))}
-
-
-            
-            {/* Main Content */}
-            <div className="main-content">
-                {/* Left Side - Stats & Connection Controls */}
-                <div className="left-panel">
-                    {/* Stats Display */}
-                    <Counter 
-                        data={lastLikeData}
-                        totalLikes={likeCount}
-                        totalGifts={giftCount}
-                        activityLevel={activityLevel}
-                        recentLikes={recentLikes}
-                        recentGifts={recentGifts}
-                    />
-                    
-                    {/* Demo Controls */}
-                    {demoMode && (
-                        <div style={{
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            padding: '20px',
-                            borderRadius: '15px',
-                            marginBottom: '20px',
-                            border: '2px solid rgba(255, 255, 255, 0.2)'
-                        }}>
-                            <h3 style={{ color: 'white', marginBottom: '15px', textAlign: 'center' }}>🎮 Demo Controls</h3>
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
-                                gap: '10px',
-                                marginBottom: '15px'
-                            }}>
-                                <button 
-                                    onClick={simulateLike}
-                                    style={{
-                                        background: '#ff6b6b',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    ❤️ Like
-                                </button>
-                                <button 
-                                    onClick={simulateGift}
-                                    style={{
-                                        background: '#4caf50',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    🎁 Gift
-                                </button>
-                                <button 
-                                    onClick={resetDemo}
-                                    style={{
-                                        background: '#ffa726',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    🔄 Reset Demo
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Gift Popup Queue - Moved from bottom to replace UserEngagement */}
-                    <GiftPopupQueue 
-                        gifts={giftPopups}
-                        onGiftProcessed={handleGiftProcessed}
-                    />
-                </div>
-                
-                {/* Center - Toothless */}
-                <div className="center-content">
-                    <Toothless 
-                        activityLevel={activityLevel}
-                        onElementHit={handleElementHit}
-                        leaderboard={leaderboard}
-                    />
-                </div>
-                
-                {/* Right Side - Leaderboard */}
-                <div className="right-panel">
-                    {(isConnected || demoMode) && (
-                        <Leaderboard 
-                            leaderboard={leaderboard}
-                        />
-                    )}
-                </div>
+        <Suspense fallback={
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100vh',
+                fontSize: '2rem',
+                color: 'white'
+            }}>
+                Loading game mode...
             </div>
-        </div>
+        }>
+            <ModeComponent 
+                socket={socket}
+                isConnected={isConnected}
+                connectionState={connectionState}
+                connectedUsername={connectedUsername}
+                demoMode={demoMode}
+            />
+        </Suspense>
     );
 }
 

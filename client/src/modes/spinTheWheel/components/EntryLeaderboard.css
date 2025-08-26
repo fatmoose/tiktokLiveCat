@@ -1,0 +1,196 @@
+.entry-leaderboard {
+  background: linear-gradient(145deg, rgba(30, 60, 114, 0.5), rgba(15, 28, 61, 0.7));
+  backdrop-filter: blur(20px);
+  border-radius: 25px;
+  padding: 25px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 200px;
+  min-width: 350px;
+}
+
+.leaderboard-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+  padding-bottom: 15px;
+}
+
+.leaderboard-header h3 {
+  color: #ffd700;
+  font-size: 1.4rem;
+  margin: 0 0 5px 0;
+  letter-spacing: 1px;
+}
+
+.leaderboard-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  padding-right: 0;
+}
+
+/* Custom Scrollbar */
+.leaderboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.5);
+  border-radius: 3px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.7);
+}
+
+/* Empty State */
+.empty-leaderboard {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.empty-leaderboard p {
+  margin: 10px 0;
+}
+
+.empty-leaderboard .hint {
+  font-size: 0.9rem;
+  color: rgba(255, 215, 0, 0.5);
+}
+
+/* Leaderboard Items */
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  opacity: 0;
+  animation: slideIn 0.5s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.leaderboard-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.leaderboard-item.top-three {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+/* Rank Display */
+.rank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+}
+
+.rank-emoji {
+  font-size: 1.3rem;
+}
+
+.rank-number {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+/* Player Info */
+.player-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.player-avatar-placeholder {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 0.9rem;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.player-name {
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Entry Stats */
+.entry-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entry-count {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.entry-icon {
+  font-size: 1.1rem;
+}
+
+/* Footer */
+.leaderboard-footer {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.total-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
