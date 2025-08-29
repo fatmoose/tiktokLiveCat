@@ -6,6 +6,8 @@ import { getModeById } from './modes/modeConfig';
 
 // Components
 import ModeSelection from './components/modeSelection/modeSelection';
+import StreamEndedPopup from './components/streamEndedPopup/streamEndedPopup';
+import ErrorBoundary from './components/errorBoundary/ErrorBoundary';
 
 // Mode components are now loaded dynamically from modeConfig
 
@@ -21,6 +23,9 @@ function App({ socket }) {
     
     // Mode state
     const [currentMode, setCurrentMode] = useState(null);
+    
+    // Stream ended state
+    const [showStreamEndedPopup, setShowStreamEndedPopup] = useState(false);
     
     // Check URL parameters on mount
     useEffect(() => {
@@ -67,11 +72,17 @@ function App({ socket }) {
             setConnectionState('DISCONNECTED');
         };
 
+        const handleStreamEnd = () => {
+            console.log('Stream ended event received');
+            setShowStreamEndedPopup(true);
+        };
+
         socket.on('connect', handleConnect);
         socket.on('disconnect', handleDisconnect);
         socket.on('tiktokConnected', handleTikTokConnected);
         socket.on('tiktokDisconnected', handleTikTokDisconnected);
         socket.on('connectionError', handleConnectionError);
+        socket.on('streamEnd', handleStreamEnd);
 
         return () => {
             socket.off('connect', handleConnect);
@@ -79,6 +90,7 @@ function App({ socket }) {
             socket.off('tiktokConnected', handleTikTokConnected);
             socket.off('tiktokDisconnected', handleTikTokDisconnected);
             socket.off('connectionError', handleConnectionError);
+            socket.off('streamEnd', handleStreamEnd);
         };
     }, [socket]);
 
@@ -128,18 +140,31 @@ function App({ socket }) {
         window.history.pushState({}, '', url);
     };
 
+    // Handle stream ended popup close
+    const handleStreamEndedClose = () => {
+        setShowStreamEndedPopup(false);
+        // Redirect back to mode selection
+        setCurrentMode(null);
+        // Clear URL parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        window.history.replaceState({}, '', url);
+    };
+
     // Render mode selection or game mode
     if (!currentMode) {
         return (
-            <ModeSelection 
-                onModeSelect={handleModeSelect}
-                socket={socket}
-                isConnected={isConnected}
-                connectionState={connectionState}
-                connectedUsername={connectedUsername}
-                onConnect={handleConnect}
-                onDisconnect={handleDisconnect}
-            />
+            <ErrorBoundary>
+                <ModeSelection 
+                    onModeSelect={handleModeSelect}
+                    socket={socket}
+                    isConnected={isConnected}
+                    connectionState={connectionState}
+                    connectedUsername={connectedUsername}
+                    onConnect={handleConnect}
+                    onDisconnect={handleDisconnect}
+                />
+            </ErrorBoundary>
         );
     }
 
@@ -156,26 +181,35 @@ function App({ socket }) {
     const ModeComponent = lazy(modeConfig.component);
     
     return (
-        <Suspense fallback={
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100vh',
-                fontSize: '2rem',
-                color: 'white'
-            }}>
-                Loading game mode...
-            </div>
-        }>
-            <ModeComponent 
-                socket={socket}
-                isConnected={isConnected}
-                connectionState={connectionState}
-                connectedUsername={connectedUsername}
-                demoMode={demoMode}
-            />
-        </Suspense>
+        <>
+            <ErrorBoundary>
+                <Suspense fallback={
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100vh',
+                        fontSize: '2rem',
+                        color: 'white'
+                    }}>
+                        Loading game mode...
+                    </div>
+                }>
+                    <ModeComponent 
+                        socket={socket}
+                        isConnected={isConnected}
+                        connectionState={connectionState}
+                        connectedUsername={connectedUsername}
+                        demoMode={demoMode}
+                    />
+                </Suspense>
+            </ErrorBoundary>
+            
+            {/* Stream Ended Popup */}
+            {showStreamEndedPopup && (
+                <StreamEndedPopup onClose={handleStreamEndedClose} />
+            )}
+        </>
     );
 }
 

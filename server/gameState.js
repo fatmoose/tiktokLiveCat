@@ -77,7 +77,7 @@ class GameState extends EventEmitter {
       this.phase = "FEEDING";
       this.feed = 0;
     }
-    this.io.emit("state:update", this.getState());
+    // Note: state:update is now handled by the main server file with targeted emission
   }
 }
 

@@ -1,0 +1,216 @@
+/* Join Instructions Styles */
+.join-instructions {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(79, 195, 247, 0.5);
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.instructions-content {
+  text-align: center;
+}
+
+.instructions-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #4fc3f7;
+  margin: 0 0 1.5rem 0;
+  text-shadow: 0 0 20px rgba(79, 195, 247, 0.8);
+}
+
+.race-info {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.info-text {
+  font-size: 1.4rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.info-subtext {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.auto-start-timer {
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid #ffd700;
+  border-radius: 15px;
+  padding: 1rem 2rem;
+  margin: 1.5rem auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  animation: timerPulse 2s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+  }
+}
+
+.timer-label {
+  font-size: 1.2rem;
+  color: #ffd700;
+}
+
+.timer-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.min-users-notice {
+  margin-top: 1.5rem;
+  padding: 1rem 2rem;
+  background: rgba(255, 99, 71, 0.1);
+  border: 2px solid #ff6347;
+  border-radius: 10px;
+  color: #ff6347;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-align: center;
+  animation: noticeGlow 2s ease-in-out infinite;
+}
+
+.countdown-info {
+  font-size: 2rem;
+  color: #ffd700;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.race-status {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 1.5rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-label {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4fc3f7;
+  text-shadow: 0 0 10px rgba(79, 195, 247, 0.8);
+}
+
+.status-value.urgent {
+  color: #ff6347;
+  text-shadow: 0 0 10px rgba(255, 99, 71, 0.8);
+  animation: urgentPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.min-racers-notice {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 2px solid #ffc107;
+  border-radius: 10px;
+  color: #ffc107;
+  font-size: 1.1rem;
+  font-weight: bold;
+  animation: noticeGlow 2s ease-in-out infinite;
+}
+
+@keyframes noticeGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .instructions-title {
+    font-size: 1.8rem;
+  }
+  
+  .join-methods {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .join-method {
+    padding: 0.8rem 1.5rem;
+  }
+  
+  .method-icon {
+    font-size: 1.5rem;
+  }
+  
+  .method-text {
+    font-size: 1.1rem;
+  }
+  
+  .countdown-info {
+    font-size: 1.5rem;
+  }
+  
+  .race-status {
+    gap: 2rem;
+  }
+  
+  .status-label {
+    font-size: 1rem;
+  }
+  
+  .status-value {
+    font-size: 1.2rem;
+  }
+}

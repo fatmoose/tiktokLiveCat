@@ -1,0 +1,111 @@
+/* Backdrop - Full screen overlay with dim effect */
+.stream-ended-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9998;
+    backdrop-filter: blur(4px);
+}
+
+/* Popup container */
+.stream-ended-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 2px solid #ff6b6b;
+    border-radius: 16px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 40px rgba(255, 107, 107, 0.3);
+    
+    min-width: 400px;
+    max-width: 90vw;
+    animation: streamEndedFadeIn 0.3s ease-out;
+}
+
+/* Content inside popup */
+.stream-ended-content {
+    padding: 40px 30px 30px;
+    text-align: center;
+    color: white;
+}
+
+.stream-ended-content h2 {
+    margin: 0 0 20px 0;
+    font-size: 2rem;
+    color: #ff6b6b;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    font-weight: 700;
+}
+
+.stream-ended-content p {
+    margin: 0 0 30px 0;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    color: #e0e0e0;
+    max-width: 500px;
+}
+
+/* Close button */
+.stream-ended-close-btn {
+    background: linear-gradient(145deg, #ff6b6b, #ff5252);
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.stream-ended-close-btn:hover {
+    background: linear-gradient(145deg, #ff5252, #ff4444);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.stream-ended-close-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
+}
+
+/* Animation */
+@keyframes streamEndedFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+    .stream-ended-popup {
+        min-width: 300px;
+        margin: 20px;
+    }
+    
+    .stream-ended-content {
+        padding: 30px 20px 20px;
+    }
+    
+    .stream-ended-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .stream-ended-content p {
+        font-size: 1rem;
+    }
+}

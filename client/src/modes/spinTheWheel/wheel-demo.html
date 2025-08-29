@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spinning Wheel Canvas Demo</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0f172a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #2563EB;
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .wheel-container {
+            width: 800px;
+            height: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #60A5FA;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #94A3B8;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 900px) {
+            .wheel-container {
+                width: 100%;
+                max-width: 600px;
+                height: 600px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .wheel-container {
+                max-width: 400px;
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🎯 Spinning Wheel Canvas Demo</h1>
+        
+        <div class="demo-section">
+            <h2>Features & Controls</h2>
+            
+            <div class="controls">
+                <button onclick="addRandomEntries(1)">Add 1 Entry</button>
+                <button onclick="addRandomEntries(10)">Add 10 Entries</button>
+                <button onclick="addRandomEntries(25)">Add 25 Entries (Tier 2)</button>
+                <button onclick="addRandomEntries(50)">Add 50 Entries</button>
+                <button onclick="addRandomEntries(100)">Add 100 Entries (Tier 3)</button>
+                <button onclick="addRandomEntries(500)">Add 500 Entries (Stress Test)</button>
+                <button onclick="addWeightedUser()">Add Weighted User (10x)</button>
+                <button onclick="clearEntries()">Clear All</button>
+                <button onclick="spinWheel()" id="spinBtn">🎡 Spin the Wheel</button>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="totalEntries">0</div>
+                    <div class="stat-label">Total Entries</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="uniqueUsers">0</div>
+                    <div class="stat-label">Unique Users</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="renderMode">All Labels</div>
+                    <div class="stat-label">Render Mode</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Live Wheel Demo</h2>
+            <div class="wheel-container" id="wheelContainer"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>About This Implementation</h2>
+            <p>This Canvas-based spinning wheel component features:</p>
+            <ul>
+                <li><strong>Three Readability Tiers:</strong>
+                    <ul>
+                        <li>0-24 entries: All labels visible on wheel</li>
+                        <li>25-80 entries: Windowed labels (only near pointer)</li>
+                        <li>81+ entries: Outer label ring with leader lines</li>
+                    </ul>
+                </li>
+                <li><strong>Performance Optimizations:</strong>
+                    <ul>
+                        <li>Offscreen canvas caching for segments</li>
+                        <li>60 FPS animation with requestAnimationFrame</li>
+                        <li>Efficient text rendering with ellipsis</li>
+                    </ul>
+                </li>
+                <li><strong>Advanced Features:</strong>
+                    <ul>
+                        <li>Weighted entries support</li>
+                        <li>Deterministic randomness with seed</li>
+                        <li>Smooth easing animations</li>
+                        <li>Responsive design</li>
+                        <li>Accessibility (ARIA announcements)</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // This is a demo page showing how the wheel works
+        // In the actual React implementation, this logic is handled by the component
+        
+        let entries = [];
+        let isSpinning = false;
+        
+        const userNames = [
+            'CoolUser123', 'SpinMaster', 'LuckyCharm', 'WheelWizard', 'FortuneSeeker',
+            'GoldenTicket', 'StarSpinner', 'MegaLuck', 'DiamondHands', 'CryptoKing',
+            'NFTCollector', 'StreamViewer', 'TopDonator', 'VIPSupporter', 'EliteGamer',
+            'ProPlayer', 'ChampionSpin', 'UltraFan', 'SuperUser', 'MegaSupporter'
+        ];
+        
+        function addRandomEntries(count) {
+            for (let i = 0; i < count; i++) {
+                const user = userNames[Math.floor(Math.random() * userNames.length)] + Math.floor(Math.random() * 1000);
+                entries.push({
+                    id: Date.now() + '-' + i,
+                    username: user,
+                    weight: 1
+                });
+            }
+            updateStats();
+            updateDemoInfo();
+        }
+        
+        function addWeightedUser() {
+            entries.push({
+                id: Date.now() + '-weighted',
+                username: 'WhaleUser' + Math.floor(Math.random() * 100),
+                weight: 10
+            });
+            updateStats();
+            updateDemoInfo();
+        }
+        
+        function clearEntries() {
+            entries = [];
+            updateStats();
+            updateDemoInfo();
+        }
+        
+        function spinWheel() {
+            if (entries.length === 0 || isSpinning) return;
+            
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+            
+            // Simulate spin for 8 seconds
+            setTimeout(() => {
+                isSpinning = false;
+                document.getElementById('spinBtn').disabled = false;
+                
+                // Show winner
+                const winner = entries[Math.floor(Math.random() * entries.length)];
+                alert(`🎉 Winner: ${winner.username}!`);
+            }, 8000);
+        }
+        
+        function updateStats() {
+            const uniqueUsers = new Set(entries.map(e => e.username)).size;
+            document.getElementById('totalEntries').textContent = entries.length;
+            document.getElementById('uniqueUsers').textContent = uniqueUsers;
+            
+            // Update render mode
+            let mode = 'All Labels';
+            if (entries.length > 80) {
+                mode = 'Outer Labels';
+            } else if (entries.length > 24) {
+                mode = 'Windowed';
+            }
+            document.getElementById('renderMode').textContent = mode;
+        }
+        
+        function updateDemoInfo() {
+            console.log('Current entries:', entries.length);
+            console.log('Render mode:', document.getElementById('renderMode').textContent);
+        }
+        
+        // Note: The actual wheel rendering would be handled by the React component
+        // This is just a demo page to show the features
+        
+        // Initialize
+        updateStats();
+    </script>
+</body>
+</html>

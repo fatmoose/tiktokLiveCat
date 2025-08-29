@@ -1,34 +1,36 @@
 .entry-leaderboard {
   background: linear-gradient(145deg, rgba(30, 60, 114, 0.5), rgba(15, 28, 61, 0.7));
   backdrop-filter: blur(20px);
-  border-radius: 25px;
-  padding: 25px;
+  border-radius: 20px;
+  padding: 20px 18px 20px 20px; /* Reduced all padding */
   border: 1px solid rgba(255, 215, 0, 0.2);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 200px;
-  min-width: 350px;
+  min-height: 150px;
+  height: 100%; /* Take full available height */
+  width: 100%;
+  overflow: hidden;
 }
 
 .leaderboard-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-  padding-bottom: 15px;
+  padding-bottom: 10px;
 }
 
 .leaderboard-header h3 {
   color: #ffd700;
-  font-size: 1.4rem;
-  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+  margin: 0 0 3px 0;
   letter-spacing: 1px;
 }
 
 .leaderboard-subtitle {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin: 0;
 }
 
@@ -37,7 +39,10 @@
   flex-direction: column;
   gap: 8px;
   flex: 1;
-  padding-right: 0;
+  padding-right: 5px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Allow flex item to shrink */
 }
 
 /* Custom Scrollbar */
@@ -62,7 +67,7 @@
 /* Empty State */
 .empty-leaderboard {
   text-align: center;
-  padding: 40px 20px;
+  padding: 30px 15px;
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -71,7 +76,7 @@
 }
 
 .empty-leaderboard .hint {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: rgba(255, 215, 0, 0.5);
 }
 
@@ -79,7 +84,7 @@
 .leaderboard-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
@@ -87,6 +92,8 @@
   transition: all 0.3s ease;
   opacity: 0;
   animation: slideIn 0.5s ease forwards;
+  min-height: 50px;
+  position: relative;
 }
 
 @keyframes slideIn {
@@ -100,6 +107,15 @@
   }
 }
 
+/* Smooth transitions for entry count updates */
+.entry-count {
+  transition: all 0.3s ease;
+}
+
+.entry-count:hover {
+  transform: scale(1.1);
+}
+
 .leaderboard-item:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateX(5px);
@@ -107,8 +123,26 @@
 }
 
 .leaderboard-item.top-three {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
   border-color: rgba(255, 215, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.leaderboard-item.top-three::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.leaderboard-item.top-three:hover::before {
+  opacity: 1;
 }
 
 /* Rank Display */
@@ -116,17 +150,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 40px;
+  min-width: 38px;
+  flex-shrink: 0;
 }
 
 .rank-emoji {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .rank-number {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* Player Info */
@@ -135,6 +170,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0; /* Allow flex item to shrink */
+  overflow: hidden;
 }
 
 .player-avatar {
@@ -142,6 +179,8 @@
   height: 30px;
   border-radius: 50%;
   border: 2px solid rgba(255, 215, 0, 0.5);
+  flex-shrink: 0;
+  object-fit: cover;
 }
 
 .player-avatar-placeholder {
@@ -154,14 +193,19 @@
   justify-content: center;
   font-weight: bold;
   color: white;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border: 2px solid rgba(255, 215, 0, 0.5);
+  flex-shrink: 0;
 }
 
 .player-name {
   color: #fff;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Entry Stats */
@@ -169,28 +213,154 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .entry-count {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #ffd700;
+  min-width: 30px;
+  text-align: right;
 }
 
 .entry-icon {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 /* Footer */
 .leaderboard-footer {
-  margin-top: 15px;
-  padding-top: 15px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .total-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .entry-leaderboard {
+    max-height: calc(100vh - 50px);
+  }
+  
+  .leaderboard-item {
+    padding: 12px 14px;
+    min-height: 55px;
+  }
+  
+  .player-avatar,
+  .player-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .entry-count {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .entry-leaderboard {
+    padding: 25px;
+    max-height: calc(100vh - 40px);
+  }
+}
+
+@media (max-width: 768px) {
+  .entry-leaderboard {
+    padding: 20px;
+    max-height: calc(100vh - 30px);
+  }
+  
+  .leaderboard-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .leaderboard-list {
+    gap: 8px;
+  }
+  
+  .leaderboard-item {
+    padding: 10px 12px;
+    gap: 10px;
+    min-height: 50px;
+  }
+  
+  .rank {
+    min-width: 40px;
+  }
+  
+  .rank-emoji {
+    font-size: 1.2rem;
+  }
+  
+  .rank-number {
+    font-size: 0.75rem;
+  }
+  
+  .player-avatar,
+  .player-avatar-placeholder {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .player-avatar-placeholder {
+    font-size: 0.85rem;
+  }
+  
+  .player-name {
+    font-size: 0.85rem;
+  }
+  
+  .entry-count {
+    font-size: 1rem;
+    min-width: 30px;
+  }
+  
+  .entry-icon {
+    font-size: 1rem;
+  }
+  
+  .total-stats {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .entry-leaderboard {
+    padding: 15px;
+    max-height: calc(100vh - 20px);
+  }
+  
+  .leaderboard-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+  }
+  
+  .leaderboard-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .leaderboard-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .leaderboard-item {
+    padding: 8px 10px;
+    min-height: 45px;
+  }
+  
+  .player-info {
+    gap: 8px;
+  }
+  
+  .entry-stats {
+    gap: 5px;
+  }
 }

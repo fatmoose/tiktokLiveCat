@@ -66,14 +66,10 @@ const AdminControls = ({ settings, onSettingsChange, onSpinNow, isSpinning, entr
             </div>
             
             <div className="setting-group">
-              <label>Clear After X Spins (0 = never)</label>
-              <input 
-                type="number"
-                min="0"
-                max="10"
-                value={settings.clearAfterSpins}
-                onChange={(e) => handleChange('clearAfterSpins', parseInt(e.target.value))}
-              />
+              <label>Auto Clear</label>
+              <div className="info-text">
+                Wheel resets after every spin
+              </div>
             </div>
           </div>
           

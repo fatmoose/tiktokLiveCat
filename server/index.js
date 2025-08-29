@@ -51,9 +51,34 @@ function getLeaderboard() {
         .slice(0, 20);
 }
 
+// Track client modes
+const clientModes = new Map(); // socket.id -> mode
+
+// Helper function to emit state updates only to boss battle clients
+function emitStateUpdateToBossBattleClients(gameState) {
+    const bossBattleClients = Array.from(clientModes.entries())
+        .filter(([_, mode]) => mode === 'bossBattle')
+        .map(([socketId, _]) => socketId);
+    
+    if (bossBattleClients.length > 0) {
+        bossBattleClients.forEach(socketId => {
+            const targetSocket = io.sockets.sockets.get(socketId);
+            if (targetSocket) {
+                targetSocket.emit('state:update', gameState);
+            }
+        });
+    }
+}
+
+// Periodic state updates for boss battle clients
+setInterval(() => {
+    emitStateUpdateToBossBattleClients(game.getState());
+}, 100); // 10 FPS updates
+
 io.on('connection', (socket) => {
     let tiktokConnectionWrapper;
     let username = '';
+    let clientMode = 'bossBattle'; // Default mode
 
     console.info('New connection from origin', socket.handshake.headers['origin'] || socket.handshake.headers['referer']);
 
@@ -62,6 +87,31 @@ io.on('connection', (socket) => {
         totalLikes,
         totalGifts,
         leaderboard: getLeaderboard()
+    });
+    
+    // Handle mode setting
+    socket.on('setMode', (mode) => {
+        clientMode = mode;
+        clientModes.set(socket.id, mode);
+        console.log(`Client ${socket.id} set mode to: ${mode}`);
+    });
+    
+    // Race mode specific events
+    socket.on('race:winner', (data) => {
+        console.log(`Race winner: ${data.username} (${data.racers} racers)`);
+        // Broadcast to all race mode clients
+        const raceClients = Array.from(clientModes.entries())
+            .filter(([_, mode]) => mode === 'racing-game')
+            .map(([id, _]) => id);
+        
+        raceClients.forEach(clientId => {
+            io.to(clientId).emit('race:winnerAnnounced', data);
+        });
+    });
+    
+    // Clean up on disconnect
+    socket.on('disconnect', () => {
+        clientModes.delete(socket.id);
     });
 
     const startTikTokConnection = async () => {
@@ -101,12 +151,12 @@ io.on('connection', (socket) => {
                     msg.likeCount
                 );
 
-                // Game integration - likes give coins
+                // Game integration - likes give coins (only for boss battle mode clients)
                 const coins = msg.likeCount * LIKE_COINS;
                 game.addCoins(msg.uniqueId, coins);
                 
-                // Emit updated game state so progress bars update
-                io.emit('state:update', game.getState());
+                // Emit updated game state only to boss battle mode clients
+                emitStateUpdateToBossBattleClients(game.getState());
 
                 // Broadcast like event with user info
                 io.emit('like', {
@@ -162,8 +212,8 @@ io.on('connection', (socket) => {
                 console.log(`Adding ${coins} coins to game state`); // Debug coins added
                 game.addCoins(msg.uniqueId, coins);
                 
-                // Emit updated game state so progress bars update
-                io.emit('state:update', game.getState());
+                // Emit updated game state only to boss battle mode clients
+                emitStateUpdateToBossBattleClients(game.getState());
                 
                 io.emit("fx:gift", { user: msg.uniqueId, coins });
 
@@ -220,7 +270,9 @@ io.on('connection', (socket) => {
             });
 
             tiktokConnectionWrapper.connection.on('streamEnd', () => {
-                socket.emit('streamEnd', { message: 'Stream ended' });
+                console.log('Stream ended - broadcasting to all clients');
+                // Broadcast to ALL connected clients that the stream has ended
+                io.emit('streamEnd', { message: 'Stream ended' });
             });
 
         } catch (err) {
@@ -259,8 +311,8 @@ io.on('connection', (socket) => {
             updateUserStats(user, user, '', 0, 1, amount);
             totalGifts += 1;
             
-            // Emit updated game state so progress bars update
-            io.emit('state:update', game.getState());
+            // Emit updated game state only to boss battle mode clients
+            emitStateUpdateToBossBattleClients(game.getState());
             
             // Broadcast gift event for demo
             io.emit('gift', {
@@ -298,8 +350,8 @@ io.on('connection', (socket) => {
         // Reset game state for fresh start
         game.reset();
         
-        // Emit updated game state after reset
-        io.emit('state:update', game.getState());
+        // Emit updated game state only to boss battle mode clients after reset
+        emitStateUpdateToBossBattleClients(game.getState());
         
         // Notify all clients about the reset
         io.emit('statsUpdate', {

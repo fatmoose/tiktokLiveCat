@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Game Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        .demo-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            text-align: center;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature {
+            background: rgba(79, 195, 247, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #4fc3f7;
+        }
+        
+        .feature h3 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+        
+        .demo-race {
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .racer {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            font-size: 24px;
+        }
+        
+        .emoji {
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏁 Emoji Race Game - Feature Demo 🏁</h1>
+    
+    <div class="demo-info">
+        <h2>Overview</h2>
+        <p>The Emoji Race is an idle-friendly, auto-looping game mode where the top 8 users from the leaderboard automatically compete in races. The leaderboard is based on likes and gifts (gifts worth 10x more than likes), creating continuous engagement as viewers try to climb the rankings!</p>
+    </div>
+    
+    <div class="feature-list">
+        <div class="feature">
+            <h3>🎮 Core Gameplay</h3>
+            <ul>
+                <li>Top 8 users from leaderboard compete</li>
+                <li>Auto-starts every 30 seconds when 3+ users on leaderboard</li>
+                <li>8-12 second races with dynamic animations</li>
+                <li>Randomized speeds with occasional speed bursts</li>
+                <li>Automatic winner detection and celebration</li>
+                <li>10-second cooldown between races</li>
+            </ul>
+        </div>
+        
+        <div class="feature">
+            <h3>🏆 Leaderboard System</h3>
+            <ul>
+                <li>Score = Likes + (Gift Value × 10)</li>
+                <li>Top 8 users automatically race</li>
+                <li>Rankings shown on each racer (#1-#8)</li>
+                <li>Point totals displayed below names</li>
+                <li>Continuous engagement to climb rankings</li>
+            </ul>
+        </div>
+        
+        <div class="feature">
+            <h3>✨ Visual Effects</h3>
+            <ul>
+                <li>Animated emoji racers with username labels</li>
+                <li>Speed particles during racing</li>
+                <li>Confetti celebration for winners</li>
+                <li>Dynamic countdown displays</li>
+                <li>Real-time join notifications</li>
+            </ul>
+        </div>
+        
+        <div class="feature">
+            <h3>📊 Features</h3>
+            <ul>
+                <li>Recent winners history</li>
+                <li>Real-time leaderboard integration</li>
+                <li>Score-based rankings display</li>
+                <li>Auto-start countdown timer</li>
+                <li>Mobile-optimized UI</li>
+                <li>Demo mode with fake leaderboard</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="demo-race">
+        <h2>Example Racers</h2>
+        <div class="racer">
+            <span class="emoji">🐎</span>
+            <span>Player1</span>
+        </div>
+        <div class="racer">
+            <span class="emoji">🦄</span>
+            <span>CoolUser</span>
+        </div>
+        <div class="racer">
+            <span class="emoji">🐕</span>
+            <span>FastRunner</span>
+        </div>
+        <div class="racer">
+            <span class="emoji">🦁</span>
+            <span>SpeedKing</span>
+        </div>
+    </div>
+    
+    <div class="demo-info" style="margin-top: 30px;">
+        <h2>Technical Features</h2>
+        <ul>
+            <li>Fully autonomous - no host intervention needed</li>
+            <li>Automatic population from server leaderboard data</li>
+            <li>Socket.IO integration for real-time leaderboard updates</li>
+            <li>30-second auto-start timer with visual countdown</li>
+            <li>Responsive design for all screen sizes</li>
+            <li>Smooth 60fps animations with requestAnimationFrame</li>
+            <li>Canvas confetti effects for celebrations</li>
+            <li>Configurable race parameters (duration, timers, etc.)</li>
+        </ul>
+    </div>
+</body>
+</html>

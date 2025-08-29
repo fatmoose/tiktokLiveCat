@@ -14,7 +14,9 @@ class TikTokConnectionWrapper extends EventEmitter {
         this.reconnectEnabled = true;
         this.reconnectCount = 0;
         this.reconnectWaitMs = 1000;
-        this.maxReconnectAttempts = 5;
+        this.maxReconnectAttempts = 10; // Increased attempts
+        this.lastConnectedTime = null;
+        this.connectionStableThreshold = 30000; // 30 seconds of stable connection
 
         this.connection = new WebcastPushConnection(uniqueId, options);
 
@@ -31,7 +33,24 @@ class TikTokConnectionWrapper extends EventEmitter {
 
         this.connection.on('error', (err) => {
             this.log(`Error event triggered: ${err.info}, ${err.exception}`);
-            console.error(err);
+            
+            // Handle specific error types
+            if (err.exception && err.exception.code === 'ECONNRESET') {
+                this.log(`Connection reset by peer - scheduling reconnect`);
+                this.scheduleReconnect('Connection reset by TikTok server');
+            } else if (err.exception && err.exception.code === 'ENOTFOUND') {
+                this.log(`DNS resolution failed - network issue`);
+                this.scheduleReconnect('Network connectivity issue');
+            } else if (err.exception && err.exception.code === 'ETIMEDOUT') {
+                this.log(`Connection timeout - scheduling reconnect`);
+                this.scheduleReconnect('Connection timeout');
+            } else {
+                this.log(`Unhandled error: ${err.exception?.code || 'Unknown'}`);
+                // For unknown errors, still try to reconnect but with a longer delay
+                setTimeout(() => {
+                    this.scheduleReconnect('Unknown connection error');
+                }, 5000);
+            }
         });
     }
 
@@ -40,9 +59,19 @@ class TikTokConnectionWrapper extends EventEmitter {
             this.log(`${isReconnect ? 'Reconnected' : 'Connected'} to roomId ${state.roomId}, websocket: ${state.upgradedToWebsocket}`);
 
             globalConnectionCount += 1;
+            this.lastConnectedTime = Date.now();
 
-            this.reconnectCount = 0;
-            this.reconnectWaitMs = 1000;
+            // Reset reconnect parameters based on connection stability
+            const connectionWasStable = this.lastConnectedTime && 
+                (Date.now() - this.lastConnectedTime) > this.connectionStableThreshold;
+            
+            if (connectionWasStable || !isReconnect) {
+                this.reconnectCount = 0;
+                this.reconnectWaitMs = 1000;
+            } else {
+                // Don't reset counters for quick reconnections
+                this.log(`Quick reconnection - maintaining backoff strategy`);
+            }
 
             if (this.clientDisconnected) {
                 this.connection.disconnect();
@@ -75,7 +104,11 @@ class TikTokConnectionWrapper extends EventEmitter {
             return;
         }
 
-        this.log(`Try reconnect in ${this.reconnectWaitMs}ms`);
+        // Add jitter to prevent thundering herd
+        const jitter = Math.random() * 1000;
+        const waitTime = Math.min(this.reconnectWaitMs + jitter, 30000); // Cap at 30 seconds
+        
+        this.log(`Try reconnect in ${Math.round(waitTime)}ms (attempt ${this.reconnectCount + 1}/${this.maxReconnectAttempts}) - Reason: ${reason}`);
 
         setTimeout(() => {
             if (!this.reconnectEnabled || this.reconnectCount >= this.maxReconnectAttempts) {
@@ -83,10 +116,18 @@ class TikTokConnectionWrapper extends EventEmitter {
             }
 
             this.reconnectCount += 1;
-            this.reconnectWaitMs *= 2;
+            
+            // Exponential backoff with jitter, but less aggressive for network errors
+            const reasonStr = reason ? reason.toString() : '';
+            if (reasonStr.includes('reset')) {
+                this.reconnectWaitMs = Math.min(this.reconnectWaitMs * 1.5, 10000); // Gentler backoff for resets
+            } else {
+                this.reconnectWaitMs = Math.min(this.reconnectWaitMs * 2, 30000); // Standard backoff
+            }
+            
             this.connect(true);
 
-        }, this.reconnectWaitMs);
+        }, waitTime);
     }
 
     disconnect() {
@@ -98,6 +139,37 @@ class TikTokConnectionWrapper extends EventEmitter {
         if (this.connection.getState().isConnected) {
             this.connection.disconnect();
         }
+    }
+
+    // Manual reset method for severe issues
+    forceReconnect() {
+        this.log(`Force reconnect requested`);
+        
+        if (this.connection.getState().isConnected) {
+            this.connection.disconnect();
+        }
+        
+        // Reset connection state
+        this.reconnectCount = 0;
+        this.reconnectWaitMs = 1000;
+        this.reconnectEnabled = true;
+        
+        // Wait a moment then reconnect
+        setTimeout(() => {
+            this.connect(true);
+        }, 2000);
+    }
+
+    // Get connection health info
+    getConnectionInfo() {
+        const state = this.connection.getState();
+        return {
+            isConnected: state.isConnected,
+            reconnectCount: this.reconnectCount,
+            lastConnected: this.lastConnectedTime,
+            maxAttempts: this.maxReconnectAttempts,
+            nextWaitTime: this.reconnectWaitMs
+        };
     }
 
     log(logString) {

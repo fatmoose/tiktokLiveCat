@@ -26,11 +26,11 @@ export const modeConfig = {
   },
   'racing-game': {
     id: 'racing-game',
-    title: 'Racing Game',
-    description: 'Coming Soon - Race against time powered by viewer engagement!',
+    title: '🏁 Emoji Race',
+    description: 'Join the race with gifts or comments and compete for glory!',
     image: '/src/assets/toothless.gif',
-    available: false,
-    component: null
+    available: true,
+    component: () => import('./raceGame/RaceGameMode.jsx')
   },
   'spin-the-wheel': {
     id: 'spin-the-wheel',

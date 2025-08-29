@@ -12,9 +12,11 @@
   "dependencies": {
     "canvas-confetti": "^1.9.3",
     "prop-types": "^15.8.1",
+    "random-cat-img": "^1.1.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "socket.io-client": "^4.7.5"
+    "socket.io-client": "^4.7.5",
+    "spin-wheel": "^5.0.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

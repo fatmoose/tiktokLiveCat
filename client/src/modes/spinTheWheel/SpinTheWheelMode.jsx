@@ -7,42 +7,73 @@ import WinnerDisplay from './components/WinnerDisplay';
 import EntryLeaderboard from './components/EntryLeaderboard';
 import AdminControls from './components/AdminControls';
 import EntryNotifications from './components/EntryNotifications';
+import GalaxyProgress from './components/GalaxyProgress';
+import EveryoneLosesDisplay from './components/EveryoneLosesDisplay';
 import './SpinTheWheelMode.css';
 
-// Gift value multipliers based on TikTok gift values
-// This is a simplified list - for unknown gifts we'll use diamond count
+// Enhanced gift value system - every gift gives at least 1 entry
+// Based on TikTok diamond values with fair scaling for engagement
 const GIFT_MULTIPLIERS = {
-  'Rose': 1,
+  'Rose': 1, // Every gift gives at least 1 entry
   'Ice Cream Cone': 1,
   'TikTok': 1,
   'Heart': 1,
   'GG': 1,
-  'Finger Heart': 5,
-  'Perfume': 20,
-  'Disco Ball': 30,
-  'Galaxy': 100,
-  'Lion': 290,
-  'Sports Car': 300,
-  'Whale Diving': 500,
-  'TikTok Universe': 1000
+  'Finger Heart': 1, // Small gifts worth 1 entry
+  'Perfume': 2,
+  'Disco Ball': 3,
+  'Galaxy': 50, // Reduced from 100
+  'Lion': 55, // Reduced from 290
+  'Sports Car': 70, // Reduced from 300
+  'Whale Diving': 80, // Reduced from 500
+  'TikTok Universe': 1000, // Reduced from 1000
+  
+  // Additional high-value gifts for better scaling
+  'Diamond Ring': 75,
+  'Crown': 125,
+  'Super Car': 200,
+  'Private Jet': 300,
+  'Luxury Yacht': 500,
+  'Space Station': 1000
+};
+
+// Enhanced diamond ranges for automatic scaling
+const DIAMOND_RANGES = {
+  MICRO: { max: 5, entries: 1 }, // 1-5 diamonds = 1 entry
+  SMALL: { max: 20, entries: 1 }, // 6-20 diamonds
+  MEDIUM: { max: 50, entries: 3 }, // 21-50 diamonds
+  LARGE: { max: 100, entries: 6 }, // 51-100 diamonds
+  HUGE: { max: 500, entries: 15 }, // 101-500 diamonds
+  MEGA: { max: 1000, entries: 50 }, // 501-1000 diamonds
+  ULTRA: { max: Infinity, entries: 100 } // 1000+ diamonds
 };
 
 function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsername, demoMode }) {
   const { state: gameState } = useGame();
   
+  // Filter out boss battle state for spin the wheel mode
+  const filteredGameState = gameState && gameState.phase === 'BOSS' ? { ...gameState, phase: 'FEEDING' } : gameState;
+  
+  // Notify server that this client is in spin the wheel mode (not boss battle mode)
+  useEffect(() => {
+    if (socket) {
+      socket.emit('setMode', 'spinTheWheel');
+    }
+  }, [socket]);
+  
   // Wheel state
   const [wheelEntries, setWheelEntries] = useState([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentWinner, setCurrentWinner] = useState(null);
-  const [spinCountdown, setSpinCountdown] = useState(120); // 2 minutes default
+  const [spinCountdown, setSpinCountdown] = useState(900); // 15 minutes default
   const [lastSpinTime, setLastSpinTime] = useState(Date.now());
   const [showingWinner, setShowingWinner] = useState(false);
   
   // Settings
   const [settings, setSettings] = useState({
-    spinInterval: 120, // seconds
+    spinInterval: 900, // 15 minutes (900 seconds)
     likesPerEntry: 100,
-    clearAfterSpins: 3,
+    clearAfterSpins: 1, // Always clear after each spin
     enableLikes: true,
     enableGifts: true,
     enableFollows: false
@@ -54,6 +85,11 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
   const [activityLevel, setActivityLevel] = useState(0);
   const [spinCount, setSpinCount] = useState(0);
   const [recentWinners, setRecentWinners] = useState([]);
+  
+  // Galaxy tracking
+  const [galaxyCount, setGalaxyCount] = useState(0);
+  const [showEveryoneLoses, setShowEveryoneLoses] = useState(false);
+  const [galaxyGifter, setGalaxyGifter] = useState(null);
   
   // Notifications
   const [entryNotifications, setEntryNotifications] = useState([]);
@@ -69,7 +105,7 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
   }, [wheelEntries]);
   
   // Add entries to the wheel
-  const addEntries = useCallback((username, count, source, profilePicture = '') => {
+  const addEntries = useCallback((username, count, source, profilePicture = '', extraData = {}) => {
     console.log(`SpinTheWheel: addEntries called - ${username}, ${count} entries, source: ${source}`);
     
     const newEntries = Array(count).fill(null).map((_, index) => ({
@@ -77,7 +113,8 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       username,
       profilePicture,
       source,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      ...extraData
     }));
     
     setWheelEntries(prev => {
@@ -86,33 +123,21 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       return updated;
     });
     
-    // Update or add entry notification
+    // Update or add entry notification with full data
     setEntryNotifications(prev => {
-      const existingIndex = prev.findIndex(n => n.username === username && Date.now() - n.timestamp < 3000);
+      // Always create a new notification for better visibility
+      const newNotification = {
+        id: `${username}-${Date.now()}-${Math.random()}`,
+        username,
+        profilePicture,
+        entries: count,
+        source,
+        totalEntries: calculateUserEntries(username) + count,
+        timestamp: Date.now(),
+        ...extraData
+      };
       
-      if (existingIndex >= 0) {
-        // Update existing notification
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          entries: updated[existingIndex].entries + count,
-          totalEntries: calculateUserEntries(username) + count,
-          timestamp: Date.now(),
-          updated: true
-        };
-        return updated;
-      } else {
-        // Add new notification
-        return [...prev, {
-          id: `${username}-${Date.now()}`,
-          username,
-          entries: count,
-          source,
-          totalEntries: calculateUserEntries(username) + count,
-          timestamp: Date.now(),
-          updated: false
-        }];
-      }
+      return [...prev, newNotification];
     });
     
     // Increase activity
@@ -138,7 +163,9 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       const likesUsed = entriesEarned * settings.likesPerEntry;
       likeAccumulatorRef.current[username] -= likesUsed;
       
-      addEntries(username, entriesEarned, 'likes', data.profilePictureUrl);
+      addEntries(username, entriesEarned, 'likes', data.profilePictureUrl, {
+        likeCount: likesUsed
+      });
     }
     
     setTotalLikes(prev => prev + likeCount);
@@ -159,36 +186,70 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
     const repeatCount = data.repeatCount || 1;
     const diamondCount = data.diamondCount || 0;
     
-    // Calculate entries based on gift value
+    // Track galaxy gifts
+    if (giftName === 'Galaxy') {
+      const newGalaxyCount = galaxyCount + repeatCount;
+      setGalaxyCount(newGalaxyCount);
+      
+      // Check if this is the 10th galaxy
+      if (newGalaxyCount >= 10 && galaxyCount < 10) {
+        setGalaxyGifter(username);
+        setShowEveryoneLoses(true);
+        console.log(`SpinTheWheel: ${username} gifted the 10th galaxy! Everyone loses!`);
+      }
+    }
+    
+    // Calculate entries based on gift value using enhanced scaling system
     let entriesPerGift;
     
-    // First try our predefined multipliers
+    // First try our predefined multipliers for known gifts
     if (GIFT_MULTIPLIERS[giftName] !== undefined) {
       entriesPerGift = GIFT_MULTIPLIERS[giftName];
+      console.log(`SpinTheWheel: Known gift "${giftName}" = ${entriesPerGift} entries`);
     } else if (diamondCount > 0) {
-      // For unknown gifts, use diamond count with scaling
-      if (diamondCount <= 10) {
-        entriesPerGift = diamondCount; // 1:1 for small gifts
-      } else if (diamondCount <= 100) {
-        entriesPerGift = Math.ceil(diamondCount / 2); // Scale down medium gifts
+      // Enhanced automatic scaling for unknown gifts based on diamond value
+      if (diamondCount <= DIAMOND_RANGES.MICRO.max) {
+        entriesPerGift = DIAMOND_RANGES.MICRO.entries;
+      } else if (diamondCount <= DIAMOND_RANGES.SMALL.max) {
+        entriesPerGift = DIAMOND_RANGES.SMALL.entries;
+      } else if (diamondCount <= DIAMOND_RANGES.MEDIUM.max) {
+        // Medium gifts: 21-50 diamonds = 3-5 entries
+        entriesPerGift = Math.max(3, Math.ceil(diamondCount / 10));
+      } else if (diamondCount <= DIAMOND_RANGES.LARGE.max) {
+        // Large gifts: 51-100 diamonds = 6-10 entries
+        entriesPerGift = Math.max(6, Math.ceil(diamondCount / 10));
+      } else if (diamondCount <= DIAMOND_RANGES.HUGE.max) {
+        // Huge gifts: 101-500 diamonds = 15-25 entries
+        entriesPerGift = Math.max(15, Math.ceil(diamondCount / 20));
+      } else if (diamondCount <= DIAMOND_RANGES.MEGA.max) {
+        // Mega gifts: 501-1000 diamonds = 50-100 entries
+        entriesPerGift = Math.max(50, Math.ceil(diamondCount / 10));
       } else {
-        entriesPerGift = Math.ceil(diamondCount / 5); // Scale down large gifts more
+        // Ultra gifts: 1000+ diamonds = 100+ entries
+        entriesPerGift = Math.max(100, Math.ceil(diamondCount / 15));
       }
-      console.log(`SpinTheWheel: Gift "${giftName}" (${diamondCount} diamonds) = ${entriesPerGift} entries per gift`);
+      console.log(`SpinTheWheel: Unknown gift "${giftName}" (${diamondCount} diamonds) = ${entriesPerGift} entries`);
     } else {
-      // Fallback: at least 1 entry per gift
+      // Fallback: give 1 entry for gifts without diamond value
       entriesPerGift = 1;
-      console.log(`SpinTheWheel: Gift "${giftName}" has no diamond value, defaulting to 1 entry`);
+      console.log(`SpinTheWheel: Gift "${giftName}" has no diamond value, giving 1 entry as fallback`);
     }
     
     const entries = entriesPerGift * repeatCount;
     
     console.log(`SpinTheWheel: Adding ${entries} entries for ${username} (${giftName} x${repeatCount})`);
     
-    addEntries(username, entries, 'gift', data.profilePictureUrl);
+    // Only add entries if the amount is greater than 0
+    if (entries > 0) {
+      addEntries(username, entries, 'gift', data.profilePictureUrl, {
+        giftName,
+        giftCount: repeatCount,
+        diamondCount
+      });
+      setActivityLevel(prev => prev + entries * 10);
+    }
     
     setTotalGifts(prev => prev + repeatCount);
-    setActivityLevel(prev => prev + entries * 10);
     
     // Show gift notification
     setGiftNotifications(prev => [...prev, {
@@ -200,18 +261,26 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       entries,
       timestamp: Date.now()
     }]);
-  }, [settings.enableGifts, addEntries]);
+  }, [settings.enableGifts, addEntries, galaxyCount]);
   
   // Spin the wheel
   const spinWheel = useCallback(() => {
-    if (wheelEntries.length === 0 || isSpinning || showingWinner) return;
+    console.log('SpinWheel called - entries:', wheelEntries.length, 'isSpinning:', isSpinning, 'showingWinner:', showingWinner);
     
+    if (wheelEntries.length === 0 || isSpinning || showingWinner) {
+      console.log('SpinWheel cancelled - conditions not met');
+      return;
+    }
+    
+    console.log('Starting wheel spin animation');
     setIsSpinning(true);
     
     // Select random winner after spin animation
     setTimeout(() => {
       const winnerIndex = Math.floor(Math.random() * wheelEntries.length);
       const winner = wheelEntries[winnerIndex];
+      
+      console.log('Wheel spin complete, winner selected:', winner.username);
       
       setCurrentWinner({
         username: winner.username,
@@ -225,37 +294,24 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       setSpinCount(prev => prev + 1);
       setIsSpinning(false);
       setShowingWinner(true); // Pause timer while showing winner
-      
-      // Failsafe: Force hide winner after 21 seconds in case onComplete doesn't fire
-      setTimeout(() => {
-        console.log('SpinTheWheelMode: Failsafe timer - clearing winner display');
-        setCurrentWinner(null);
-        setShowingWinner(false);
-        setLastSpinTime(Date.now());
-        setSpinCountdown(settings.spinInterval);
-      }, 21000);
-      
-      // Clear entries if needed
-      if (settings.clearAfterSpins > 0 && (spinCount + 1) % settings.clearAfterSpins === 0) {
-        setTimeout(() => {
-          setWheelEntries([]);
-          likeAccumulatorRef.current = {};
-        }, 20500); // Clear after winner screen disappears (20s + 0.5s fade)
-      }
     }, 8000); // 8 second spin animation
-  }, [wheelEntries, isSpinning, showingWinner, calculateUserEntries, spinCount, settings.clearAfterSpins, settings.spinInterval]);
+  }, [wheelEntries, isSpinning, showingWinner, calculateUserEntries]);
   
   // Timer countdown
   useEffect(() => {
     const interval = setInterval(() => {
-      // Don't count down while showing winner
-      if (showingWinner) return;
+      // Don't count down while showing winner or spinning
+      if (showingWinner || isSpinning) {
+        console.log('Timer paused - showingWinner:', showingWinner, 'isSpinning:', isSpinning);
+        return;
+      }
       
       const elapsed = Math.floor((Date.now() - lastSpinTime) / 1000);
       const remaining = Math.max(0, settings.spinInterval - elapsed);
       setSpinCountdown(remaining);
       
-      if (remaining === 0 && wheelEntries.length > 0 && !isSpinning && !showingWinner) {
+      if (remaining === 0 && wheelEntries.length > 0) {
+        console.log('Timer reached 0, triggering spin - entries:', wheelEntries.length);
         spinWheel();
       }
     }, 1000);
@@ -294,7 +350,7 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
   
   // Demo mode functions
   const simulateLike = () => {
-    const likeAmount = Math.floor(Math.random() * 50) + 50; // 50-100 likes
+    const likeAmount = settings.likesPerEntry; // Exactly enough for 1 entry
     const user = `DemoUser${Math.floor(Math.random() * 20)}`;
     handleLikes({
       nickname: user,
@@ -317,6 +373,62 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
     });
   };
   
+  // Add mass entries for testing with realistic user distribution
+  const simulateMassEntries = (count = 100) => {
+    console.log(`Adding ${count} demo entries`);
+    
+    // Create a realistic distribution of users (some with many entries, some with few)
+    const userCounts = {};
+    const totalUsers = Math.max(5, Math.floor(count / 10)); // 5-10% of entries will be unique users
+    
+    for (let i = 0; i < count; i++) {
+      // 70% chance to use existing user, 30% chance to create new user
+      let user;
+      if (Math.random() < 0.7 && Object.keys(userCounts).length > 0) {
+        // Use existing user
+        const existingUsers = Object.keys(userCounts);
+        user = existingUsers[Math.floor(Math.random() * existingUsers.length)];
+      } else {
+        // Create new user
+        user = `TestUser${Math.floor(Math.random() * 1000)}`;
+      }
+      
+      if (!userCounts[user]) {
+        userCounts[user] = 0;
+      }
+      userCounts[user]++;
+      
+      // Randomly decide if it's a gift or likes
+      if (Math.random() > 0.5) {
+        // Gift entry
+        const gifts = Object.keys(GIFT_MULTIPLIERS);
+        const gift = gifts[Math.floor(Math.random() * gifts.length)];
+        addEntries(user, 1, 'gift', `https://picsum.photos/40/40?random=${Math.random()}`, {
+          giftName: gift,
+          giftCount: 1
+        });
+      } else {
+        // Like entry
+        addEntries(user, 1, 'likes', `https://picsum.photos/40/40?random=${Math.random()}`, {
+          likeCount: 100
+        });
+      }
+    }
+    
+    console.log(`Created ${Object.keys(userCounts).length} unique users with entry distribution:`, userCounts);
+  };
+  
+  const clearAllEntries = () => {
+    setWheelEntries([]);
+    likeAccumulatorRef.current = {};
+  };
+  
+  // Reset wheel when galaxy limit is reached
+  const handleGalaxyMaxReached = useCallback(() => {
+    console.log('Galaxy limit reached! Resetting wheel...');
+    // The popup is already shown, just need to handle the reset after
+  }, []);
+  
   // Activity decay
   useEffect(() => {
     const interval = setInterval(() => {
@@ -326,11 +438,10 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
     return () => clearInterval(interval);
   }, []);
   
-  // Clean old notifications
+  // Clean old gift notifications only (entry notifications are handled by queue system)
   useEffect(() => {
     const interval = setInterval(() => {
-      const cutoff = Date.now() - 5000;
-      setEntryNotifications(prev => prev.filter(n => n.timestamp > cutoff));
+      const cutoff = Date.now() - 8000; // Keep gift notifications for 8 seconds
       setGiftNotifications(prev => prev.filter(n => n.timestamp > cutoff));
     }, 1000);
     
@@ -339,6 +450,7 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
   
   // Get leaderboard data
   const getLeaderboard = () => {
+    console.log('Getting leaderboard data, wheelEntries:', wheelEntries.length);
     const entryCounts = {};
     wheelEntries.forEach(entry => {
       if (!entryCounts[entry.username]) {
@@ -355,14 +467,17 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       if (entry.source === 'gift') entryCounts[entry.username].gifts++;
     });
     
-    return Object.values(entryCounts)
+    const leaderboardData = Object.values(entryCounts)
       .sort((a, b) => b.entries - a.entries)
       .slice(0, 10);
+    
+    console.log('Leaderboard data:', leaderboardData);
+    return leaderboardData;
   };
   
   return (
     <div className="spin-the-wheel-mode">
-      <DynamicBackground activityLevel={activityLevel} />
+      {/* DynamicBackground removed to prevent interference with boss battle mode */}
       
       {/* Gift Notifications */}
       {giftNotifications.map((notification) => (
@@ -380,7 +495,10 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
           <SpinningWheel 
             entries={wheelEntries}
             isSpinning={isSpinning}
-            onSpinComplete={(winner) => setCurrentWinner(winner)}
+            onSpinComplete={(winner) => {
+              setCurrentWinner(winner);
+              // Don't clear immediately - let WinnerDisplay handle it
+            }}
           />
           
           {/* Demo Controls */}
@@ -393,15 +511,42 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
                 <button onClick={spinWheel} disabled={isSpinning || wheelEntries.length === 0}>
                   🎡 Spin Now
                 </button>
+                <button onClick={() => {
+                  // Simulate galaxy gift
+                  const user = `GalaxyGifter${Math.floor(Math.random() * 100)}`;
+                  handleGifts({
+                    nickname: user,
+                    giftName: 'Galaxy',
+                    repeatCount: 1,
+                    diamondCount: 1000,
+                    profilePictureUrl: `https://picsum.photos/50/50?random=${Math.random()}`
+                  });
+                }}>🌌 Gift Galaxy</button>
+              </div>
+              <div className="demo-buttons">
+                <button onClick={() => simulateMassEntries(10)}>📦 Add 10 Entries</button>
+                <button onClick={() => simulateMassEntries(50)}>📦 Add 50 Entries</button>
+                <button onClick={() => simulateMassEntries(100)}>📦 Add 100 Entries</button>
+                <button onClick={() => simulateMassEntries(500)}>🎯 Add 500 Entries</button>
+                <button onClick={() => {
+                  // Test single user with many entries
+                                  for (let i = 0; i < 50; i++) {
+                  addEntries('SuperUser', 1, 'gift', `https://picsum.photos/40/40?random=${Math.random()}`, {
+                    giftName: 'Galaxy',
+                    giftCount: 1
+                  });
+                }
+                }}>👑 SuperUser (50 entries)</button>
+                <button onClick={clearAllEntries}>🗑️ Clear All</button>
               </div>
             </div>
           )}
         </div>
         
-        {/* Right Panel - Stats & Leaderboard Side by Side */}
+        {/* Right Panel - All UI Elements */}
         <div className="right-panel">
-          {/* Top Row - Stats and Leaderboard */}
-          <div className="top-row">
+          {/* Left Column - Everything except leaderboard */}
+          <div className="left-column">
             {/* Stats Display */}
             <div className="stats-display">
               <div className="stats-row">
@@ -413,13 +558,13 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
                   <h3>UNIQUE<br/>PLAYERS</h3>
                   <p>{new Set(wheelEntries.map(e => e.username)).size}</p>
                 </div>
-              </div>
-              <div className="stats-row">
                 <div className="stat-box">
                   <h3>SPINS<br/>TODAY</h3>
                   <p>{spinCount}</p>
                 </div>
-                <div className="stat-box timer-box">
+              </div>
+              <div className="stats-row">
+                <div className="stat-box timer-box full-width">
                   <h3>NEXT<br/>SPIN</h3>
                   <div className="countdown">
                     {Math.floor(spinCountdown / 60)}:{(spinCountdown % 60).toString().padStart(2, '0')}
@@ -428,41 +573,48 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
               </div>
             </div>
             
-            {/* Leaderboard */}
-            <EntryLeaderboard entries={getLeaderboard()} />
-          </div>
-          
-          {/* Recent Winners */}
-          <div className="recent-winners">
-            <h3>🏆 Recent Winners</h3>
-            {recentWinners.length > 0 ? (
-              <div className="winner-list">
-                {recentWinners.map((winner, index) => (
-                  <div key={index} className="recent-winner">
-                    @{winner}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="no-winners">
-                <p>No winners yet</p>
-              </div>
+            {/* Recent Winners */}
+            <div className="recent-winners">
+              <h3>🏆 Recent Winners</h3>
+              {recentWinners.length > 0 ? (
+                <div className="winner-list">
+                  {recentWinners.map((winner, index) => (
+                    <div key={index} className="recent-winner">
+                      @{winner}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-winners">
+                  <p>No winners yet</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Entry Notifications */}
+            <EntryNotifications notifications={entryNotifications} />
+            
+            {/* Admin Controls - Only show for streamer */}
+            {isConnected && connectedUsername && (
+              <AdminControls 
+                settings={settings}
+                onSettingsChange={setSettings}
+                onSpinNow={spinWheel}
+                isSpinning={isSpinning}
+                entriesCount={wheelEntries.length}
+              />
             )}
           </div>
           
-          {/* Entry Notifications */}
-          <EntryNotifications notifications={entryNotifications} />
-          
-          {/* Admin Controls - Only show for streamer */}
-          {isConnected && connectedUsername && (
-            <AdminControls 
-              settings={settings}
-              onSettingsChange={setSettings}
-              onSpinNow={spinWheel}
-              isSpinning={isSpinning}
-              entriesCount={wheelEntries.length}
+          {/* Right Column - Leaderboard Only */}
+          <div className="right-column">
+            <EntryLeaderboard entries={getLeaderboard()} />
+            <GalaxyProgress 
+              galaxyCount={galaxyCount}
+              maxGalaxies={10}
+              onMaxReached={handleGalaxyMaxReached}
             />
-          )}
+          </div>
         </div>
         
 
@@ -472,12 +624,28 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       {currentWinner && (
         <WinnerDisplay 
           winner={currentWinner}
+          socket={socket}
           onComplete={() => {
+            console.log('WinnerDisplay onComplete called');
+            
+            // Clear winner state
             setCurrentWinner(null);
             setShowingWinner(false);
+            
+            // Clear wheel entries after showing winner
+            console.log('Clearing wheel entries');
+            setWheelEntries([]);
+            likeAccumulatorRef.current = {};
+            
             // Restart timer after winner screen disappears
+            console.log('Restarting timer with interval:', settings.spinInterval);
             setLastSpinTime(Date.now());
             setSpinCountdown(settings.spinInterval);
+            
+            // Force a re-render to ensure wheel updates
+            setTimeout(() => {
+              console.log('Forcing component update after winner display');
+            }, 100);
           }}
         />
       )}
@@ -485,6 +653,29 @@ function SpinTheWheelMode({ socket, isConnected, connectionState, connectedUsern
       {/* Dimming overlay when winner is shown - moved to end to ensure proper layering */}
       {currentWinner && (
         <div className="winner-dimming-overlay" />
+      )}
+      
+      {/* Everyone Loses Display */}
+      {showEveryoneLoses && galaxyGifter && (
+        <EveryoneLosesDisplay 
+          username={galaxyGifter}
+          onComplete={() => {
+            console.log('EveryoneLosesDisplay onComplete called');
+            
+            // Clear all state
+            setShowEveryoneLoses(false);
+            setGalaxyGifter(null);
+            setGalaxyCount(0);
+            
+            // Clear all entries
+            setWheelEntries([]);
+            likeAccumulatorRef.current = {};
+            
+            // Reset timer
+            setLastSpinTime(Date.now());
+            setSpinCountdown(settings.spinInterval);
+          }}
+        />
       )}
     </div>
   );

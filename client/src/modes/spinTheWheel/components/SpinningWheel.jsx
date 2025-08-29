@@ -1,537 +1,357 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Wheel } from 'spin-wheel';
 import './SpinningWheel.css';
 
-const SpinningWheel = ({ entries, isSpinning, onSpinComplete }) => {
+const SpinningWheel = ({ 
+  entries = [], 
+  isSpinning = false, 
+  onSpinComplete,
+  externalSpinResult = null // { winnerId, seed? }
+}) => {
+  const containerRef = useRef(null);
   const wheelRef = useRef(null);
-  const [currentRotation, setCurrentRotation] = useState(0);
-  const [segments, setSegments] = useState([]);
   const [winner, setWinner] = useState(null);
-  const [showParticles, setShowParticles] = useState(false);
-  const animationRef = useRef(null);
-  
-  const size = 800;
-  const radius = (size / 2) - 40;
-  const centerX = size / 2;
-  const centerY = size / 2;
-  
-  // Generate vibrant TikTok-style colors
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [newEntryEffect, setNewEntryEffect] = useState(null);
+
+  // Generate alternating vibrant colors for better contrast
   const generateVibrantColor = (index, total) => {
-    const colors = [
-      '#FF0050', // TikTok Pink
-      '#00F5FF', // Cyan
-      '#FFD700', // Gold
-      '#FF6B35', // Orange
-      '#7B68EE', // Purple
-      '#00FF87', // Green
-      '#FF1493', // Deep Pink
-      '#1E90FF', // Dodger Blue
-      '#FF4500', // Red Orange
-      '#9370DB', // Medium Purple
-      '#00CED1', // Dark Turquoise
-      '#FF69B4', // Hot Pink
-      '#32CD32', // Lime Green
-      '#FF6347', // Tomato
-      '#20B2AA', // Light Sea Green
-      '#DA70D6', // Orchid
+    // Define color pairs that alternate for maximum contrast
+    const colorPairs = [
+      ['#FF0080', '#00FFFF'], // Hot pink & Cyan
+      ['#FFD700', '#9C27B0'], // Gold & Purple
+      ['#00FF00', '#FF4500'], // Lime & Orange
+      ['#FF1493', '#1E90FF'], // Deep pink & Blue
+      ['#FFFF00', '#E91E63'], // Yellow & Pink
+      ['#4CAF50', '#FF5722'], // Green & Red-orange
+      ['#00CED1', '#FF6347'], // Turquoise & Tomato
+      ['#8BC34A', '#9370DB'], // Light green & Medium purple
     ];
     
-    if (total <= colors.length) {
-      return colors[index % colors.length];
-    }
+    // Pick alternating colors from pairs
+    const pairIndex = Math.floor(index / 2) % colorPairs.length;
+    const colorIndex = index % 2;
     
-    // Generate consistent HSL colors for larger arrays
-    const hue = (index * 137.5) % 360; // Use golden angle for better distribution
-    const saturation = 75 + (index % 3) * 8; // 75-91%
-    const lightness = 45 + (index % 4) * 5; // 45-60%
-    
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    return colorPairs[pairIndex][colorIndex];
   };
 
-  // Create wheel segments from entries
-  useEffect(() => {
-    if (entries.length === 0) {
-      setSegments([]);
-      return;
-    }
+  // Process entries into wheel items
+  const getWheelItems = () => {
+    if (entries.length === 0) return [];
     
-    // Group entries by username
+    // Group entries by username and calculate weights
     const userGroups = {};
     entries.forEach(entry => {
       if (!userGroups[entry.username]) {
         userGroups[entry.username] = {
           username: entry.username,
           profilePicture: entry.profilePicture || '',
-          count: 0
+          entries: [],
+          weight: 0
         };
       }
-      userGroups[entry.username].count++;
-      // Update profile picture if we get a newer one
-      if (entry.profilePicture && !userGroups[entry.username].profilePicture) {
-        userGroups[entry.username].profilePicture = entry.profilePicture;
-      }
+      userGroups[entry.username].entries.push(entry);
+      userGroups[entry.username].weight += (entry.weight || 1);
     });
     
-    // Create segments with proper sizing
-    const participants = Object.values(userGroups);
-    const segmentAngle = 360 / participants.length;
+    // Convert to wheel items with balanced weights
+    const items = Object.values(userGroups);
     
-    const newSegments = participants.map((participant, index) => {
-      const startAngle = index * segmentAngle;
-      const endAngle = startAngle + segmentAngle;
+    // Calculate total weight
+    const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+    
+    // Sort items by weight to ensure proper scaling
+    items.sort((a, b) => b.weight - a.weight);
+    
+    // Apply smart scaling to prevent extreme domination
+    return items.map((group, index) => {
+      let displayWeight = group.weight;
+      const weightPercentage = group.weight / totalWeight;
+      
+      // Progressive scaling based on dominance
+      if (weightPercentage > 0.5) {
+        // If someone has more than 50%, cap their visual size
+        displayWeight = totalWeight * 0.35; // Cap at 35% visual size
+      } else if (weightPercentage > 0.3) {
+        // Scale down proportionally
+        displayWeight = group.weight * 0.7;
+      } else if (weightPercentage > 0.2) {
+        // Slight scaling
+        displayWeight = group.weight * 0.85;
+      }
+      
+      // Boost small entries for visibility
+      if (weightPercentage < 0.05 && totalWeight > 20) {
+        // Ensure minimum 3% visual size for small entries
+        displayWeight = Math.max(displayWeight, totalWeight * 0.03);
+      }
       
       return {
-        id: `${participant.username}-${index}`,
-        username: participant.username,
-        profilePicture: participant.profilePicture,
-        count: participant.count,
-        color: generateVibrantColor(index, participants.length),
-        angle: segmentAngle,
-        startAngle,
-        endAngle,
+        label: group.weight > 1 ? `${group.username} (${group.weight})` : group.username,
+        value: group.username,
+        weight: Math.max(1, Math.round(displayWeight)),
+        originalWeight: group.weight, // Keep original for fairness
+        backgroundColor: generateVibrantColor(index, items.length),
+        labelColor: '#ffffff'
       };
     });
-    
-    setSegments(newSegments);
-  }, [entries]);
-  
-  // Animation utilities
-  const easeOutCubic = (t) => {
-    return 1 - Math.pow(1 - t, 3);
   };
 
-  const generateSpinDuration = () => {
-    return Math.random() * 2000 + 3000; // 3-5 seconds
-  };
-
-  const generateSpinRotations = () => {
-    return Math.random() * 5 + 8; // 8-13 full rotations
-  };
-
-  // Get winner from angle
-  const getWinnerFromAngle = (segments, finalAngle) => {
-    if (segments.length === 0) return null;
-    
-    // Normalize angle to 0-360
-    const normalizedAngle = ((finalAngle % 360) + 360) % 360;
-    
-    // The wheel spins clockwise, so we need to find the segment that the pointer hits
-    // The pointer is at the top (0 degrees), so we look for the segment at that position
-    const targetAngle = (360 - normalizedAngle) % 360;
-    
-    return segments.find(segment => 
-      targetAngle >= segment.startAngle && targetAngle < segment.endAngle
-    ) || segments[0];
-  };
-  
-  // Reset rotation when wheel entries change (after a spin completes)
+  // Trigger entry effect when entries change
   useEffect(() => {
-    if (!isSpinning && entries.length > 0) {
-      setCurrentRotation(0);
-      setWinner(null);
-      setShowParticles(false);
+    if (entries.length > 0) {
+      setNewEntryEffect(true);
+      const timer = setTimeout(() => setNewEntryEffect(false), 1000);
+      return () => clearTimeout(timer);
     }
-  }, [entries, isSpinning]);
-  
-  // Spin animation
+  }, [entries.length]);
+
+  // Create animated pointer with dynamic effects - positioned to touch wheel edge
+  const createAnimatedPointer = () => {
+    const canvas = document.createElement('canvas');
+    const size = 1000;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Calculate exact wheel positioning
+    const centerX = size / 2;
+    const centerY = size / 2;
+    // The actual wheel radius needs adjustment for proper alignment
+    // The wheel has radius 0.88 (88% of container), but we need half of that
+    // Also accounting for container padding and actual rendering
+    const wheelRadius = size * 0.88 * 0.5 * 0.85; // 0.88 radius * 0.5 for actual radius * 0.85 adjustment factor
+    
+    // Position pointer to touch the wheel edge exactly
+    const pointerTipY = centerY - wheelRadius; // Tip exactly touches wheel edge
+    const pointerBaseY = pointerTipY - 100; // Increased pointer length for bigger size
+    
+    // Outer glow effect
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 35;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Draw triangle pointer pointing down - touching wheel (bigger size)
+    ctx.beginPath();
+    ctx.moveTo(centerX - 65, pointerBaseY); // Left base point (increased from 50 to 65)
+    ctx.lineTo(centerX + 65, pointerBaseY); // Right base point (increased from 50 to 65)
+    ctx.lineTo(centerX, pointerTipY); // Tip touching wheel
+    ctx.closePath();
+    
+    // Gradient fill
+    const pointerGradient = ctx.createLinearGradient(centerX, pointerBaseY, centerX, pointerTipY);
+    pointerGradient.addColorStop(0, '#FF1493');
+    pointerGradient.addColorStop(0.5, '#FFD700');
+    pointerGradient.addColorStop(1, '#FF4500');
+    
+    ctx.fillStyle = pointerGradient;
+    ctx.fill();
+    
+    // White border for contrast (slightly thicker for bigger pointer)
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 7;
+    ctx.stroke();
+    
+    // Inner highlight for depth (scaled proportionally)
+    ctx.beginPath();
+    ctx.moveTo(centerX - 32, pointerBaseY + 18); // Scaled from 25 to 32
+    ctx.lineTo(centerX + 32, pointerBaseY + 18); // Scaled from 25 to 32
+    ctx.lineTo(centerX, pointerTipY - 12); // Scaled from 10 to 12
+    ctx.closePath();
+    
+    const triangleHighlight = ctx.createLinearGradient(centerX, pointerBaseY + 18, centerX, pointerTipY - 12);
+    triangleHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+    triangleHighlight.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+    ctx.fillStyle = triangleHighlight;
+    ctx.fill();
+    
+    // Convert to image
+    const img = new Image();
+    img.src = canvas.toDataURL();
+    return img;
+  };
+
+  // Initialize wheel
   useEffect(() => {
-    if (!isSpinning) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+    if (!containerRef.current) {
+      console.log('SpinningWheel: Container ref not ready');
       return;
     }
+
+    const items = getWheelItems();
+    console.log('SpinningWheel: Initializing with', items.length, 'items');
     
-    setWinner(null);
-    setShowParticles(false);
-    
-    const duration = generateSpinDuration();
-    const rotations = generateSpinRotations();
-    const finalAngle = currentRotation + (rotations * 360);
-    
-    let startTime;
-    
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const easedProgress = easeOutCubic(progress);
-      const currentAngle = currentRotation + (rotations * 360 * easedProgress);
-      
-      setCurrentRotation(currentAngle);
-      
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentRotation(finalAngle);
-        
-        const winningSegment = getWinnerFromAngle(segments, finalAngle);
-        if (winningSegment && onSpinComplete) {
-          setWinner(winningSegment);
-          setShowParticles(true);
-          onSpinComplete(winningSegment);
+    if (items.length === 0) {
+      console.log('SpinningWheel: No items, skipping wheel creation');
+      return;
+    }
+
+    // Clean up existing wheel
+    if (wheelRef.current) {
+      console.log('SpinningWheel: Removing existing wheel');
+      wheelRef.current.remove();
+      wheelRef.current = null;
+    }
+
+    // Clear container
+    containerRef.current.innerHTML = '';
+
+    // Force container dimensions to be correct
+    const containerBounds = containerRef.current.getBoundingClientRect();
+    console.log('SpinningWheel: Container dimensions:', containerBounds.width, 'x', containerBounds.height);
+
+    // Create wheel with enhanced configuration
+    const props = {
+      items: items,
+      radius: 0.88,
+      itemBackgroundColors: items.map(item => item.backgroundColor),
+      itemLabelColors: ['#ffffff'],
+      itemLabelFont: '"Comic Sans MS", "Comic Sans", cursive',
+      itemLabelFontSizeMax: 18,
+      itemLabelRadius: 0.65,
+      itemLabelRadiusMax: 0.35,
+      itemLabelRotation: 0,
+      itemLabelAlign: 'center',
+      itemLabelBaselineOffset: 0,
+      // Thicker text stroke for better readability
+      itemLabelStrokeColor: '#000000',
+      itemLabelStrokeWidth: 2,
+      lineColor: '#ffffff',
+      lineWidth: 3,
+      rotationSpeedMax: 600,
+      rotationResistance: -120,
+      offset: 0,
+      pointerAngle: 0, // Pointer at top (12 o'clock)
+      onRest: (event) => {
+        const winningItem = items[event.currentIndex];
+        if (winningItem) {
+          handleWinnerSelected(winningItem);
         }
-      }
+        setIsAnimating(false);
+      },
+      onSpin: () => {
+        setIsAnimating(true);
+        setWinner(null);
+        // Trigger confetti or effects here
+      },
+      // overlayImage: createAnimatedPointer(), // Disabled - using CSS pointer instead
+      isInteractive: false,
     };
-    
-    animationRef.current = requestAnimationFrame(animate);
-    
+
+    // Create new wheel
+    try {
+      wheelRef.current = new Wheel(containerRef.current, props);
+      console.log('SpinningWheel: Wheel created successfully');
+      
+      // Force a resize to ensure proper sizing
+      setTimeout(() => {
+        if (wheelRef.current && wheelRef.current.resize) {
+          wheelRef.current.resize();
+          console.log('SpinningWheel: Wheel resized');
+        }
+      }, 100);
+    } catch (error) {
+      console.error('SpinningWheel: Error creating wheel:', error);
+    }
+
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (wheelRef.current) {
+        wheelRef.current.remove();
+        wheelRef.current = null;
       }
     };
-  }, [isSpinning, currentRotation, segments, onSpinComplete]);
-  
-  // Particle system component
-  const ParticleSystem = ({ active }) => {
-    if (!active) return null;
+  }, [entries]);
+
+  // Handle winner selection
+  const handleWinnerSelected = (winningItem) => {
+    const winnerData = {
+      username: winningItem.value,
+      totalEntries: winningItem.originalWeight || winningItem.weight, // Use original weight for accuracy
+      source: 'spin',
+      timestamp: Date.now()
+    };
     
-    return (
-      <div className="particle-system">
-        {[...Array(20)].map((_, i) => (
-          <div 
-            key={i} 
-            className="particle"
-            style={{
-              '--delay': `${i * 0.1}s`,
-              '--x': `${Math.random() * 100}%`,
-              '--y': `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-      </div>
-    );
+    setWinner(winnerData);
+    
+    if (onSpinComplete) {
+      onSpinComplete(winnerData);
+    }
   };
 
-  if (segments.length === 0) {
+  // Handle spin trigger
+  useEffect(() => {
+    if (!isSpinning || !wheelRef.current || isAnimating) return;
+
+    const items = getWheelItems();
+    if (items.length === 0) return;
+
+    // If we have an external result, spin to that winner
+    if (externalSpinResult && externalSpinResult.winnerId) {
+      const winnerIndex = items.findIndex(item => item.value === externalSpinResult.winnerId);
+      if (winnerIndex !== -1) {
+        // Spin to the specific item
+        const duration = 4000 + Math.random() * 2000; // 4-6 seconds
+        const rotations = 3 + Math.floor(Math.random() * 3); // 3-5 full rotations
+        wheelRef.current.spinToItem(winnerIndex, duration, true, rotations, 1);
+      } else {
+        // Fallback to random spin if winner not found
+        wheelRef.current.spin(300 + Math.random() * 200);
+      }
+    } else {
+      // Random spin
+      wheelRef.current.spin(300 + Math.random() * 200);
+    }
+  }, [isSpinning, isAnimating, externalSpinResult]);
+
+  // Render empty state
+  if (entries.length === 0) {
     return (
-      <div className="spinning-wheel-container empty-wheel" style={{ width: size, height: size }}>
-        <div className="empty-wheel-content">
-          <div 
-            className="empty-wheel-circle"
-            style={{ width: size, height: size }}
-          >
-            <div className="empty-wheel-gradient" />
-            <div className="empty-wheel-text">
-              <div className="ready-emoji">🎯 Ready to Spin!</div>
-              <div className="add-participants">Add participants to start</div>
-            </div>
+      <div className="spinning-wheel-container empty-state">
+        <div className="empty-wheel-placeholder">
+          <div className="empty-wheel-circle">
+            <span className="empty-wheel-icon">🎯</span>
           </div>
+          <h3>Ready to Spin!</h3>
+          <p>Add participants to start</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="spinning-wheel-container" style={{ width: size, height: size }}>
-      <ParticleSystem active={showParticles} />
+    <div className="spinning-wheel-container">
+      <div 
+        ref={containerRef} 
+        className={`wheel-canvas-container ${newEntryEffect ? 'new-entry-effect' : ''}`}
+        style={{ width: '100%', height: '100%' }}
+      />
       
-      <svg
-        ref={wheelRef}
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="wheel-svg"
-        style={{
-          transform: `rotate(${currentRotation}deg)`,
-          transition: isSpinning ? 'none' : 'transform 0.5s ease-out',
-        }}
-      >
-        {/* Outer animated border */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={radius + 15}
-          fill="none"
-          stroke="url(#animatedBorder)"
-          strokeWidth="8"
-          opacity="0.8"
-        />
-        
-        {/* Main border */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={radius + 8}
-          fill="none"
-          stroke="url(#mainBorder)"
-          strokeWidth="6"
-        />
-        
-        {/* Inner border */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={radius + 2}
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="3"
-          opacity="0.9"
-        />
-        
-        {/* Wheel segments */}
-        {segments.map((segment) => {
-          const startAngle = segment.startAngle - 90;
-          const endAngle = segment.endAngle - 90;
-          const largeArcFlag = segment.angle > 180 ? 1 : 0;
-          
-          const startRadian = (startAngle * Math.PI) / 180;
-          const endRadian = (endAngle * Math.PI) / 180;
-          
-          const x1 = centerX + radius * Math.cos(startRadian);
-          const y1 = centerY + radius * Math.sin(startRadian);
-          const x2 = centerX + radius * Math.cos(endRadian);
-          const y2 = centerY + radius * Math.sin(endRadian);
-          
-          const pathData = `
-            M ${centerX} ${centerY}
-            L ${x1} ${y1}
-            A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
-            Z
-          `;
-          
-          // Calculate content positioning
-          const textAngle = (startAngle + endAngle) / 2;
-          const textRadian = (textAngle * Math.PI) / 180;
-          
-          // Position profile picture in the middle area of the slice
-          const profileRadius = radius * 0.45;
-          const profileX = centerX + profileRadius * Math.cos(textRadian);
-          const profileY = centerY + profileRadius * Math.sin(textRadian);
-          
-          // Position text further out but closer to the edge
-          const textRadius = radius * 0.7;
-          
-          // Calculate dynamic sizing based on segment size and username length
-          const segmentWidthAtText = 2 * Math.PI * textRadius * (segment.angle / 360);
-          const usernameLength = segment.username.length;
-          
-          // Dynamic font size based on both segment width and username length
-          let fontSize = Math.min(20, Math.max(10, segmentWidthAtText / (usernameLength * 0.7)));
-          
-          // Adjust for very small segments
-          if (segment.angle < 30) {
-            fontSize = Math.min(fontSize, 14);
-          } else if (segment.angle < 60) {
-            fontSize = Math.min(fontSize, 16);
-          }
-          
-          // Profile size scales with segment angle but has reasonable bounds
-          const profileSize = Math.min(50, Math.max(20, segment.angle * 1.2));
-          
-          return (
-            <g key={segment.id}>
-              {/* Segment path with gradient */}
-              <defs>
-                <radialGradient id={`gradient-${segment.id}`} cx="30%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor={segment.color} stopOpacity="1"/>
-                  <stop offset="100%" stopColor={segment.color} stopOpacity="0.8"/>
-                </radialGradient>
-              </defs>
-              
-              <path
-                d={pathData}
-                fill={`url(#gradient-${segment.id})`}
-                stroke="#ffffff"
-                strokeWidth="3"
-                className="wheel-segment"
-                style={{
-                  filter: winner?.id === segment.id 
-                    ? 'brightness(1.8) saturate(2) drop-shadow(0 0 30px rgba(255,255,255,0.9))' 
-                    : isSpinning 
-                    ? 'brightness(1.3) saturate(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.3))'
-                    : 'brightness(1.1) saturate(1.2) drop-shadow(0 0 5px rgba(0,0,0,0.3))',
-                }}
-              />
-              
-              {/* Profile picture group positioned in slice center */}
-              <g transform={`translate(${centerX}, ${centerY}) rotate(${textAngle})`}>
-                {/* Profile picture background circle */}
-                <circle
-                  cx={profileRadius}
-                  cy={0}
-                  r={profileSize / 2 + 2}
-                  fill="white"
-                  stroke={segment.color}
-                  strokeWidth="2"
-                  style={{
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-                  }}
-                />
-                
-                {/* Profile picture */}
-                <circle
-                  cx={profileRadius}
-                  cy={0}
-                  r={profileSize / 2}
-                  fill={`url(#profile-${segment.id})`}
-                  style={{
-                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-                  }}
-                />
-              </g>
-              
-              {/* Profile picture pattern */}
-              <defs>
-                <pattern id={`profile-${segment.id}`} x="0" y="0" width="100%" height="100%">
-                  {segment.profilePicture ? (
-                    <image 
-                      href={segment.profilePicture} 
-                      x="0" 
-                      y="0" 
-                      width="100%" 
-                      height="100%" 
-                      preserveAspectRatio="xMidYMid slice"
-                    />
-                  ) : (
-                    <>
-                      <circle cx="50%" cy="50%" r="45%" fill={segment.color} opacity="0.4"/>
-                      <text 
-                        x="50%" 
-                        y="58%" 
-                        textAnchor="middle" 
-                        fontSize={profileSize * 0.45}
-                        fill="white"
-                        fontWeight="bold"
-                        fontFamily="Arial, sans-serif"
-                        style={{
-                          textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-                        }}
-                      >
-                        {segment.username.charAt(0).toUpperCase()}
-                      </text>
-                    </>
-                  )}
-                </pattern>
-              </defs>
-              
-              {/* Username text aligned with radius */}
-              <g transform={`translate(${centerX}, ${centerY}) rotate(${textAngle})`}>
-                <text
-                  x={textRadius}
-                  y={-5}
-                  fill="white"
-                  fontSize={fontSize}
-                  fontWeight="bold"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  transform={textAngle > 90 && textAngle < 270 ? `rotate(180, ${textRadius}, -5)` : ''}
-                  style={{
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.9)',
-                    filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.9))',
-                    fontFamily: 'Arial, sans-serif',
-                  }}
-                >
-                  {segment.username}
-                </text>
-                
-                {/* Entry count aligned with radius */}
-                <text
-                  x={textRadius}
-                  y={fontSize * 0.8}
-                  fill="rgba(255,255,255,0.9)"
-                  fontSize={Math.max(10, fontSize * 0.7)}
-                  fontWeight="600"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  transform={textAngle > 90 && textAngle < 270 ? `rotate(180, ${textRadius}, ${fontSize * 0.8})` : ''}
-                  style={{
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-                    filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))',
-                    fontFamily: 'Arial, sans-serif',
-                  }}
-                >
-                  {segment.count} {segment.count === 1 ? 'entry' : 'entries'}
-                </text>
-              </g>
-            </g>
-          );
-        })}
-        
-        {/* Center circle with improved design */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={size / 8}
-          fill="url(#centerGradient)"
-          stroke="#ffffff"
-          strokeWidth="6"
-          style={{
-            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',
-          }}
-        />
-        
-        {/* Center logo/icon */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={size / 12}
-          fill="url(#centerLogoGradient)"
-          stroke="rgba(255,255,255,0.8)"
-          strokeWidth="2"
-        />
-        
-        {/* Center text */}
-        <text
-          x={centerX}
-          y={centerY + 5}
-          fill="white"
-          fontSize={size / 25}
-          fontWeight="bold"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{
-            textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-            fontFamily: 'Arial, sans-serif',
-          }}
-        >
-          🎯
-        </text>
-        
-        {/* Gradients and animations */}
-        <defs>
-          <linearGradient id="animatedBorder" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#3B82F6" />
-            <stop offset="25%" stopColor="#8B5CF6" />
-            <stop offset="50%" stopColor="#06B6D4" />
-            <stop offset="75%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#F59E0B" />
-            <animateTransform
-              attributeName="gradientTransform"
-              type="rotate"
-              values="0 400 400;360 400 400"
-              dur="4s"
-              repeatCount="indefinite"
-            />
-          </linearGradient>
-          
-          <linearGradient id="mainBorder" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E40AF" />
-            <stop offset="50%" stopColor="#7C3AED" />
-            <stop offset="100%" stopColor="#0891B2" />
-          </linearGradient>
-          
-          <radialGradient id="centerGradient" cx="30%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#374151" />
-            <stop offset="50%" stopColor="#1F2937" />
-            <stop offset="100%" stopColor="#111827" />
-          </radialGradient>
-          
-          <radialGradient id="centerLogoGradient" cx="30%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="50%" stopColor="#3B82F6" />
-            <stop offset="100%" stopColor="#1E40AF" />
-          </radialGradient>
-        </defs>
-      </svg>
+      {/* Entry added effect */}
+      {newEntryEffect && (
+        <div className="entry-added-effect">
+          <div className="entry-sparkle sparkle-1">✨</div>
+          <div className="entry-sparkle sparkle-2">🌟</div>
+          <div className="entry-sparkle sparkle-3">💫</div>
+          <div className="entry-sparkle sparkle-4">⭐</div>
+        </div>
+      )}
       
-      {/* Modern Pointer */}
-      <div className="wheel-pointer">
-        <div className="pointer-glow" />
-        <div className="pointer-shadow" />
-        <div className="pointer-main" />
-        <div className="pointer-highlight" />
-      </div>
+      {/* Winner Banner */}
+      {winner && !isAnimating && (
+        <div className="winner-banner" aria-live="assertive">
+          <div className="winner-content">
+            <div className="winner-emoji">🎉</div>
+            <div className="winner-name">{winner.username}</div>
+            <div className="winner-entries">({winner.totalEntries} entries)</div>
+          </div>
+          <div className="confetti-container">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className={`confetti confetti-${i}`}>🎊</div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

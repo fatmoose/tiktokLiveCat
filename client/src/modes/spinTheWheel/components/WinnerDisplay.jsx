@@ -1,12 +1,28 @@
 import { useEffect, useState, useRef } from 'react';
 import './WinnerDisplay.css';
 
-const WinnerDisplay = ({ winner, onComplete }) => {
+// Simple cat image placeholder - removed random-cat-img dependency
+const getRandomCat = () => {
+  // Using larger placekitten images that are more likely to load
+  const width = 400 + Math.floor(Math.random() * 10); // 400-409
+  const height = 300 + Math.floor(Math.random() * 10); // 300-309
+  
+  return Promise.resolve({
+    success: true,
+    message: `https://placekitten.com/${width}/${height}`
+  });
+};
+
+const WinnerDisplay = ({ winner, onComplete, socket }) => {
   const [show, setShow] = useState(false);
   const [particles, setParticles] = useState([]);
   const [shouldRender, setShouldRender] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const countdownIntervalRef = useRef(null);
+  const [catImageUrl, setCatImageUrl] = useState('');
+  const [memeyText, setMemeyText] = useState('');
+  const [liveComments, setLiveComments] = useState([]);
+  const [latestComment, setLatestComment] = useState('');
   
   useEffect(() => {
     let hideTimer;
@@ -94,6 +110,67 @@ const WinnerDisplay = ({ winner, onComplete }) => {
     };
   }, [winner, onComplete]);
   
+  // Generate random cat image and memey text when winner changes
+  useEffect(() => {
+    if (winner) {
+      // Generate cat image
+      getRandomCat().then(data => {
+        console.log('Cat image data:', data);
+        if (data.success) {
+          setCatImageUrl(data.message);
+          console.log('Cat image URL set to:', data.message);
+        }
+      }).catch(error => {
+        console.error('Failed to fetch cat image:', error);
+        // Fallback to a guaranteed working image
+        setCatImageUrl('https://placekitten.com/400/300');
+      });
+      
+      // Generate memey text
+      const memeyAdjectives = [
+        'absolutely legendary', 'mind-blowingly epic', 'impossibly cool', 'ridiculously awesome',
+        'super duper amazing', 'incredibly based', 'monumentally poggers', 'supremely goated',
+        'extremely sigma', 'unbelievably cracked', 'totally fire', 'massively W', 'genuinely iconic'
+      ];
+      
+      const memeyVerbs = [
+        'slaying the game', 'absolutely crushing it', 'dominating the vibes', 'winning at life',
+        'being a total legend', 'serving main character energy', 'hitting different',
+        'living their best life', 'being an absolute unit', 'touching grass professionally',
+        'manifesting success', 'being the moment', 'understanding the assignment'
+      ];
+      
+      const randomAdjective = memeyAdjectives[Math.floor(Math.random() * memeyAdjectives.length)];
+      const randomVerb = memeyVerbs[Math.floor(Math.random() * memeyVerbs.length)];
+      
+      setMemeyText(`${winner.username} is ${randomAdjective} and really good at ${randomVerb}`);
+      console.log('Memey text set to:', `${winner.username} is ${randomAdjective} and really good at ${randomVerb}`);
+    }
+  }, [winner]);
+  
+  // Listen for comments from the specific winner
+  useEffect(() => {
+    if (!socket || !winner) return;
+    
+    const handleComment = (data) => {
+      // Only show comments from the current winner
+      if (data.uniqueId === winner.username || data.nickname === winner.username) {
+        setLatestComment(data.comment);
+        setLiveComments(prev => [{
+          id: Date.now(),
+          comment: data.comment,
+          timestamp: Date.now()
+        }, ...prev.slice(0, 4)]); // Keep last 5 comments
+      }
+    };
+    
+    socket.on('comment', handleComment);
+    
+    return () => {
+      socket.off('comment', handleComment);
+    };
+  }, [socket, winner]);
+  
   if (!shouldRender) return null;
   
   const getTitle = () => {
@@ -145,6 +222,53 @@ const WinnerDisplay = ({ winner, onComplete }) => {
           <h2 className="winner-username">@{winner.username}</h2>
           <p className="winner-title">{getTitle()}</p>
           <p className="winner-entries">{winner.totalEntries} entries</p>
+        </div>
+        
+        {/* Follow Call-to-Action */}
+        <div className="follow-cta">
+          <div className="follow-arrow">👆</div>
+          <h3 className="follow-text">FOLLOW THIS PERSON</h3>
+          <h4 className="follow-subtext">BECAUSE THEY WON!</h4>
+        </div>
+        
+        {/* Live Comments Section */}
+        <div className="live-comments-section">
+          <h4 className="comments-title">💬 Live from the Winner:</h4>
+          <div className="latest-comment">
+            {latestComment ? (
+              <p className="comment-text">"{latestComment}"</p>
+            ) : (
+              <p className="comment-placeholder">Waiting for their next comment...</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Cat Image with Memey Text */}
+        <div className="cat-section">
+          <div className="cat-container">
+            <div className="memey-text-top">
+              {memeyText ? memeyText.split(' and really good at ')[0] : `${winner.username} is amazing`}
+            </div>
+            {catImageUrl ? (
+              <img 
+                src={catImageUrl} 
+                alt="Random celebration cat" 
+                className="celebration-cat"
+                onError={(e) => {
+                  console.error('Cat image failed to load:', catImageUrl);
+                  e.target.src = 'https://placekitten.com/400/300'; // Fallback
+                }}
+              />
+            ) : (
+              <div className="cat-placeholder">
+                <span>🐱</span>
+                <p>Loading cat...</p>
+              </div>
+            )}
+            <div className="memey-text-bottom">
+              {memeyText ? `and really good at ${memeyText.split(' and really good at ')[1]}` : 'and really good at winning!'}
+            </div>
+          </div>
         </div>
         
         <div className="winner-celebration">

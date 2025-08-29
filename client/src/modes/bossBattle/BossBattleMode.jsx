@@ -16,6 +16,13 @@ function BossBattleMode({ socket, isConnected, connectionState, connectedUsernam
     // Add useGame hook to get server state
     const { state: gameState } = useGame();
     
+    // Notify server that this client is in boss battle mode
+    useEffect(() => {
+        if (socket) {
+            socket.emit('setMode', 'bossBattle');
+        }
+    }, [socket]);
+    
     // Game state
     const [likeCount, setLikeCount] = useState(0);
     const [giftCount, setGiftCount] = useState(0);
@@ -348,6 +355,7 @@ function BossBattleMode({ socket, isConnected, connectionState, connectedUsernam
                         totalGifts={giftCount}
                         activityLevel={activityLevel}
                         recentLikes={recentLikes}
+                        isActiveBossMode={true}
                         recentGifts={recentGifts}
                     />
                     

@@ -5,7 +5,7 @@ import bossGif from '../../assets/boss.gif';
 import toothlessGif from '../../assets/toothless.gif';
 import './counter.css';
 
-const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
+const Counter = ({ data, totalLikes, totalGifts, activityLevel, isActiveBossMode = true }) => {
     const [displayLikes, setDisplayLikes] = useState(0);
     const [displayGifts, setDisplayGifts] = useState(0);
     const { state, socket } = useGame();
@@ -57,8 +57,13 @@ const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
 
     // Boss battle activation
     useEffect(() => {
+        // Debug logging
         if (state && state.phase === 'BOSS') {
-            // Only start battle if not already in progress
+            console.log('🔍 Boss phase detected, isActiveBossMode:', isActiveBossMode, 'Current mode:', window.location.search);
+        }
+        
+        if (state && state.phase === 'BOSS' && isActiveBossMode) {
+            // Only start battle if not already in progress and we're in boss mode
             if (!isStreetFighterMode) {
                 console.log('🎮 Starting Street Fighter Battle Mode');
                 setIsStreetFighterMode(true);
@@ -84,7 +89,7 @@ const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
                 setProjectileHits(new Set());
             }
         }
-    }, [state?.phase, isStreetFighterMode, battleEnded]);
+    }, [state?.phase, isStreetFighterMode, battleEnded, isActiveBossMode]);
 
     // Safety cleanup: if we're showing Street Fighter mode but state says we're not in boss phase
     useEffect(() => {
@@ -412,7 +417,7 @@ const Counter = ({ data, totalLikes, totalGifts, activityLevel }) => {
     }, [state?.levelIdx, state?.feed, state?.phase, bossHealthSF, toothlessHealth]);
 
     // Street Fighter Mode - Full Screen Battle
-    if (isStreetFighterMode) {
+    if (isStreetFighterMode && isActiveBossMode && state?.phase === 'BOSS') {
         return (
             <div className="street-fighter-battle-overlay">
                 <div className="sf-background">
